@@ -420,4 +420,56 @@ for box in matching_regions:
     # Define the region where the template was found (use the template size)
     detect_text_from_region(box)
     
+# %%
+# coordinates will be a dictionary to store where to check for status
+# specifically severe injury for now.
+# in each scene, key will be the scene name, correspond to the scene target folder
+coordinates = {"team_select": {"how_many": 6,
+        "coordinates":[(521, 171),
+            (521,312),
+            (521,454),
+            (521,594),
+            (521,734),
+            (521,873)],
+            "w":88,
+            "h":88},
+        #in page team_select ->select, the coordinates are slitely off,
+        #it's still doable with tolerant ~0.7, but just incase I will hard code it.
+        "char_select": {"how_many": 6, 
+        "coordinates":[(521, 173),
+            (521,315),
+            (521,456),
+            (521,598),
+            (521,740),
+            (521,880)],
+            "w":88,
+            "h":88},
+        }
+# %%
+# Load the target template image
+status_path = fr'data\screenshot\status\severe_injure.png'
+template = cv2.imread(status_path, cv2.IMREAD_COLOR)
+# Get the dimensions of the template
+template_height, template_width = template.shape[:2]
+# %%
+for (x,y) in coordinates['char_select']['coordinates']:
+    
+    region_of_interest = (x, y, 88, 88)  # Adjust as necessary
+    x, y, w, h = region_of_interest
+    screenshot= capture_screenshot()
+    cropped_region = screenshot[y:y+h, x:x+w]
 
+
+    #cropped_gray = cv2.cvtColor(cropped_region, cv2.COLOR_BGR2GRAY)
+    # Resize the cropped region to match the template size
+    resized_cropped_region = cv2.resize(cropped_region, (template_width, template_height))
+
+    # Perform template matching
+    result = cv2.matchTemplate(resized_cropped_region, template, cv2.TM_CCOEFF_NORMED)
+    _, max_val, _, max_loc = cv2.minMaxLoc(result)
+
+    # Set a threshold for a match
+    if max_val > 0.8:
+        print(f"Match found {max_val}")
+    else:
+        print(f"No match found {max_val}")
