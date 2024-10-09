@@ -55,7 +55,7 @@
         "tar_name": "yes",
         "scenes":
             {
-                "next_step": {
+                "severe_injure_warning2": {
                     "coordinates": [[628,674]],
                     "w": 322,
                     "h": 82
@@ -65,7 +65,7 @@
                     "w": 322,
                     "h": 82
                 },
-                "battle_set_out": {
+                "severe_injure_warning1": {
                     "coordinates": [[628,674]],
                     "w": 322,
                     "h": 82
@@ -77,12 +77,18 @@
         "tar_name": "no",
         "scenes":
             {
-                "next_step": {
+                "go_home": {
                     "coordinates": [[985,674]],
                     "w": 322,
                     "h": 82
                 },
-                "battle_set_out": {
+                "severe_injure_warning1": {
+                    "coordinates": [[985,674]],
+                    "w": 322,
+                    "h": 82
+                }
+                ,
+                "severe_injure_warning2": {
                     "coordinates": [[985,674]],
                     "w": 322,
                     "h": 82
@@ -115,6 +121,23 @@
                     "coordinates": [[673, 121]],
                     "w": 416,
                     "h": 418
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "home_button",
+        "scenes":
+            {
+                "march_page": {
+                    "coordinates": [[1725, 978]],
+                    "w": 190,
+                    "h": 92
+                },
+                "battle_set_out": {
+                    "coordinates": [[1725, 978]],
+                    "w": 190,
+                    "h": 92
                 }
             }
     },

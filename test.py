@@ -541,10 +541,10 @@ def check_end_pt(screenshot, map, threshold = 0.8):
 
     if best_match_name:
         print(f"Best match: {best_match_name} with confidence: {best_confidence}")
-        return best_match_name, best_confidence
+        return True, best_confidence
     else:
         print("No good match found.")
-        return None, None
+        return False, None
 
 # %%
 screenshot= capture_screenshot()
@@ -557,40 +557,29 @@ check_end_pt(screenshot, map_target["2_3"],threshold=0.8)
 #2. find button
 #3. click button
 #4. check scene to make sure it is correct
-def clickButton(start_scene, button, end_scene):
+def clickButton(start_scene, button):
+    # screenshot= capture_screenshot()
+    # matched, confidence = match_scene(screenshot, scene_targets[start_scene], threshold=0.7)
+    # if matched:
     screenshot= capture_screenshot()
-    best_target, confidence = find_best_match_in_scene(screenshot, scene_targets, threshold=0.7)
-    if best_target == start_scene:
-        screenshot= capture_screenshot()
-        wanted_button = check_area(screenshot, targets[button], start_scene,threshold=0.4)
-        if wanted_button:
-            #found march image
-            coords = targets[button].get_coordinates(start_scene)
-            [(x,y)] = coords['coordinates']
-            w = coords['w']
-            h = coords['h']
-            middle_x = w // 2
-            middle_y = h // 2
-            repeat_count = 0
-            while True:
-                repeat_count+=1
-                adb_tap(x+middle_x, y+middle_y)
-                time.sleep(2)#TODO: implement wait until, 
-                screenshot= capture_screenshot()
-                best_target, confidence = find_best_match_in_scene(screenshot, scene_targets, threshold=0.8)
-                if best_target == end_scene:
-                    print('success')
-                    break
-                elif repeat_count > 10:
-                    print(f'after 10 click still not at right place, at {best_target}')
-                    return False
-                else:
-                    print(f'end up at wrong place {best_target}')
-                    return False
-            return True
+    wanted_button = check_area(screenshot, targets[button], start_scene,threshold=0.5)
+    if wanted_button:
+        #found march image
+        coords = targets[button].get_coordinates(start_scene)
+        [(x,y)] = coords['coordinates']
+        w = coords['w']
+        h = coords['h']
+        middle_x = w // 2
+        middle_y = h // 2
+        
+        adb_tap(x+middle_x, y+middle_y)
+        return True
     else:
-        print('start at wrong place')
+        print(f'Not wanted button {button}')
         return False
+    # else:
+    #     print('Not wanted start_scene')
+    #     return False
 # %%
 # %%
 # Example usage
@@ -613,7 +602,7 @@ scene_targets = load_targets(scene_directory)
 scene_targets
 # %%
 screenshot= capture_screenshot()
-best_target, confidence = find_best_match_in_scene(screenshot, targets, threshold=0.8)
+best_target, confidence = find_best_match_in_scene(screenshot, scene_targets, threshold=0.8)
 # %%
 screenshot= capture_screenshot()
 best_target, confidence = find_best_match_using_ssim(screenshot, targets, threshold=0.8)
@@ -626,19 +615,27 @@ status_target_directory = os.path.join('data', 'screenshot','status')
 status_targets = load_targets(status_target_directory)
 status_targets
 # %%
-clickButton('home','march_button','march_page')
+battlefield_target_directory = os.path.join('data', 'screenshot','battlefield')
+battlefield_targets = load_targets(battlefield_target_directory)
+battlefield_targets
 # %%
-clickButton('march_page','march_image','battlefield_select')
 
 # %%
 def click1():
     adb_tap(438, 594)
+    return True
 def click2():
     adb_tap(962, 601)
+    return True
 def click3():
     adb_tap(438, 809)
+    return True
 def click4():
     adb_tap(962, 834)
+    return True
+def click_random():
+    adb_tap(944,313)
+    return True
 # %%
 click3()
 # %%
@@ -648,12 +645,45 @@ clickButton('next_step','keep_on','battlefield')
 # %%
 screenshot= capture_screenshot()
 
-check_end_pt(screenshot, map_target["2_3"],threshold=0.7)# not working good yet TODO
+check_end_pt(screenshot, map_target["2_3"],threshold=0.8)
 # %%
 # %%
 clickButton('next_step','return_base','go_home')
 # %%
-clickButton('go_home','yes','home',threshold=0.7)
+clickButton('go_home','yes','home')
+
+# %%
+def match_scene(screenshot, target, threshold=0.8):
+    """
+    Compare multiple target templates to the current screenshot and return the name of the target with the highest confidence.
+    
+    Parameters:
+    - screenshot: The current screenshot (OpenCV image).
+    - target: path to the target_template.
+    - threshold: Matching threshold (0-1). A higher value means a more exact match is required.
+    
+    Returns:
+    - match: boolean of whether it is a match
+    - max_val: Confidence score of the match.
+    """
+    
+
+    template = cv2.imread(target, cv2.IMREAD_COLOR)
+    
+    if template is None:
+        print(f"Error: Template image at {target} could not be loaded.")
+        return False, None
+    else:
+        screenshot_blurred = cv2.GaussianBlur(screenshot, (5, 5), 0)
+        template_blurred = cv2.GaussianBlur(template, (5, 5), 0)
+        result = cv2.matchTemplate(screenshot_blurred, template_blurred, cv2.TM_CCOEFF_NORMED) 
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+        if  max_val >= threshold:
+            print(f"Match found for {target}, confidence {max_val}.")
+            return True, max_val
+    print(f"No match for {target}, confidence {max_val}.")
+    return False, None
+
 # %%
 #try a full cycle
 #1. from home click march button
@@ -661,6 +691,8 @@ clickButton('go_home','yes','home',threshold=0.7)
 #3. TODO select era click era
 #4. TODO select location click location
 #5. from battle_set_out click march_now
+    #5-1. from possible severe_injure_warning1, click no
+    
 # REPEAT START (random clicking on buttonless area TODO)
 #6. from next_step check_stop_pt
     #6-1. if stop, click return_base
@@ -672,3 +704,185 @@ clickButton('go_home','yes','home',threshold=0.7)
     #8-3. check if at home, END REPEAT
 #9. TODO implement healing
 #10. END REPEAT, START AGAIN.
+def march(map_name, stop_before_boss, healing, speed):
+    """
+    Compare multiple target templates to the current screenshot and return the name of the target with the highest confidence.
+    
+    Parameters:
+    - screenshot: The current screenshot (OpenCV image).
+    - target: path to the target_template.
+    - threshold: Matching threshold (0-1). A higher value means a more exact match is required.
+    
+    Returns:
+    - again: boolean of whether to keep marching the same map
+    
+    """
+    screenshot= capture_screenshot()
+    at_home, confidence = match_scene(screenshot, scene_targets['home'], threshold=0.7)
+    if not at_home:
+        print("Not starting at home.")
+        return False
+    #1. from home click march button
+    clicked = clickButton('home','march_button')
+    while clicked:
+        time.sleep(speed)
+        screenshot= capture_screenshot()
+        matched, confidence = match_scene(screenshot, scene_targets['march_page'], threshold=0.8)
+        if matched:
+            break
+    #2. from march_page click march image
+    clicked = clickButton('march_page','march_image')
+    while clicked:
+        time.sleep(speed)
+        screenshot= capture_screenshot()
+        matched, confidence = match_scene(screenshot, scene_targets['battlefield_select'], threshold=0.8)
+        if matched:
+            break
+    #3. TODO select era click era
+    #4. TODO select location click location
+    
+    #so far default select l3, so far I will assume
+    #the l3 click position is the safe default click(only when in battle)
+    clicked = click3()
+    while clicked:
+        time.sleep(speed)
+        screenshot= capture_screenshot()
+        matched, confidence = match_scene(screenshot, scene_targets['battle_set_out'], threshold=0.8)
+        if matched:
+            break
+    #5. from battle_set_out click march_now
+    clicked = clickButton('battle_set_out','march_now')
+    while clicked:
+        time.sleep(speed)
+        screenshot= capture_screenshot()
+        
+        matched, confidence = match_scene(screenshot, scene_targets['severe_injure_warning1'], threshold=0.7)
+        if matched:
+            if healing and map_name == '1_1':
+                #this is a 1-1 healing trip
+                healing()
+            else:
+                #5-1. from possible severe_injure_warning1, click no
+                clicked = clickButton('severe_injure_warning1','no')
+                while clicked:
+                    time.sleep(speed)
+                    screenshot= capture_screenshot()
+                    
+                    matched, confidence = match_scene(screenshot, scene_targets['battle_set_out'], threshold=0.7)
+                    if matched:
+                        break
+                clicked = clickButton('battle_set_out','home_button')
+                while clicked:
+                    time.sleep(speed)
+                    screenshot= capture_screenshot()
+                    
+                    matched, confidence = match_scene(screenshot, scene_targets['home'], threshold=0.7)
+                    if matched:
+                        break
+                print('Someone severely injured, stop.')
+                return False
+        matched, confidence = match_scene(screenshot, battlefield_targets[map_name], threshold=0.7)
+        if matched:
+            #If matched, start the map
+            print(f"start marching {map_name}...")
+            break
+    #REPEAT START
+    #6. from next_step check_end_pt
+    
+    while True:
+        click_random()
+        time.sleep(speed)
+        screenshot= capture_screenshot()
+        matched, confidence = match_scene(screenshot, scene_targets["next_step"], threshold=0.7)
+        if matched:
+            #6-1. if stop, click return_base
+            #screenshot= capture_screenshot()
+            if stop_before_boss:
+                found_stop, _ =check_end_pt(screenshot, map_target[map_name],threshold=0.78)
+                if found_stop:
+                    at_home = go_home(speed)
+                    if at_home:
+                        print("Successfully runned once, keep going.")
+                        return True
+                #not at stop yet
+                clicked = clickButton('next_step','keep_on')
+                injury = injury_check_in_battle(speed)
+                if injury:
+                    print('Someone severely injured, stop.')
+                    return False
+            else:
+                #no need to stop before boss
+                clicked = clickButton('next_step','keep_on')
+                #8. check severe_injure warning 1&2
+                injury = injury_check_in_battle(speed)
+                if injury:
+                    print('Someone severely injured, stop.')
+                    return False
+        
+    
+                    
+    
+                
+# %%
+march("5_4",False,False,1)
+# %%
+scene_targets['home']
+# %%
+def healing():
+    pass
+# %%
+targets['no']
+# %%
+check_area(screenshot, targets['no'], 'severe_injure_warning1',threshold=0.4)
+# %%
+def injury_check_in_battle(speed):
+    #return if someone is injured
+    #8. check severe_injure warning 1&2
+    while True:
+        click_random()
+        time.sleep(speed)
+        screenshot = capture_screenshot()
+        matched, confidence = match_scene(screenshot, scene_targets["severe_injure_warning1"], threshold=0.7)  
+        if matched:
+            #8-1. if so, click no
+            clicked = clickButton('severe_injure_warning1','no')
+            while clicked:
+                time.sleep(speed)
+                screenshot= capture_screenshot()
+                
+                matched, confidence = match_scene(screenshot, scene_targets['next_step'], threshold=0.7)
+                if matched:
+                    break
+            at_home = go_home(speed)
+            return at_home
+        else:
+            matched, confidence = match_scene(screenshot, scene_targets["next_step"], threshold=0.7)
+            if matched:
+                #no one injured.
+                break
+        screenshot = capture_screenshot()
+        matched, confidence = match_scene(screenshot, scene_targets["home"], threshold=0.7)  
+        if matched:
+            print("Successfully runned once, keep going")
+            break
+    return False
+
+def go_home(speed):
+    clicked = clickButton('next_step','return_base')
+    while clicked:
+        time.sleep(speed)
+        screenshot= capture_screenshot()
+        
+        matched, confidence = match_scene(screenshot, scene_targets['go_home'], threshold=0.7)
+        if matched:
+            break
+    #6-2. click yes
+    clicked = clickButton('go_home','yes')
+    while clicked:
+        time.sleep(speed)
+        screenshot= capture_screenshot()
+        
+        matched, confidence = match_scene(screenshot, scene_targets['home'], threshold=0.7)
+        if matched:
+            break
+    return True
