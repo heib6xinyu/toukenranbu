@@ -1,0 +1,133 @@
+[
+    {
+        "tar_type": "status",
+        "tar_name": "severe_injure",
+        "scenes":{
+                "team_select": {
+                    "coordinates": [[521, 171],
+                    [521,312],
+                    [521,454],
+                    [521,594],
+                    [521,734],
+                    [521,873]],
+                    "w": 88,
+                    "h": 88
+                }
+                ,
+                "char_select": {
+                    "coordinates": [[521, 173],
+                    [521,315],
+                    [521,456],
+                    [521,598],
+                    [521,740],
+                    [521,880]],
+                    "w": 88,
+                    "h": 88
+                }
+            }
+        },
+    {
+        "tar_type": "button",
+        "tar_name": "keep_on",
+        "scenes":
+            {
+                "next_step": {
+                    "coordinates": [[1089,624]],
+                    "w": 218,
+                    "h": 218
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "return_base",
+        "scenes":
+            {
+                "next_step": {
+                    "coordinates": [[1645,624]],
+                    "w": 218,
+                    "h": 218
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "yes",
+        "scenes":
+            {
+                "next_step": {
+                    "coordinates": [[628,674]],
+                    "w": 322,
+                    "h": 82
+                },
+                "go_home": {
+                    "coordinates": [[628,674]],
+                    "w": 322,
+                    "h": 82
+                },
+                "battle_set_out": {
+                    "coordinates": [[628,674]],
+                    "w": 322,
+                    "h": 82
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "no",
+        "scenes":
+            {
+                "next_step": {
+                    "coordinates": [[985,674]],
+                    "w": 322,
+                    "h": 82
+                },
+                "battle_set_out": {
+                    "coordinates": [[985,674]],
+                    "w": 322,
+                    "h": 82
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "march_button",
+        "scenes":
+            {
+                "home": {
+                    "coordinates": [[1726, 108]],
+                    "w": 190,
+                    "h": 92
+                },
+                "battle_set_out": {
+                    "coordinates": [[1726, 108]],
+                    "w": 190,
+                    "h": 92
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "march_image",
+        "scenes":
+            {
+                "march_page": {
+                    "coordinates": [[673, 121]],
+                    "w": 416,
+                    "h": 418
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "march_now",
+        "scenes":
+            {
+                "battle_set_out": {
+                    "coordinates": [[1231,888]],
+                    "w": 316,
+                    "h": 122
+                }
+            }
+    }
+]

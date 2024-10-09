@@ -8,6 +8,8 @@ import time
 import os
 from skimage.metrics import structural_similarity as ssim
 import pytesseract
+from target import Target, TargetManager
+from map import Map, MapManager
 # %%
 #abd commands
 def connect_adb():
@@ -92,7 +94,7 @@ def find_template_in_screenshot(screenshot, template_path,threshold = 0.3):
         print(f"Best confidence: {max_val}")
         return None, None, None
 
-def find_best_match_in_scene(screenshot, targets, threshold=0.3):
+def find_best_match_in_scene(screenshot, targets, threshold=0.8):
     """
     Compare multiple target templates to the current screenshot and return the name of the target with the highest confidence.
     
@@ -285,91 +287,6 @@ def resize_image(image, scale_percent=50):
     return cv2.resize(image, (width, height), interpolation=cv2.INTER_AREA)
 
 
-# %%
-# Example usage
-connect_adb()
-# %%
-screenshot_image = capture_screenshot()
-
-local_image = fr'data\screenshot\status\severe_injure.png'
-
-# Display the screenshot (optional)
-top_left, width, height = find_template_in_screenshot(screenshot_image, local_image)
-
-# %%
-adb_tap(top_left[0], top_left[1])
-# %%
-
-target_directory = os.path.join('data', 'screenshot','scene')
-targets = load_targets(target_directory)
-targets
-# %%
-screenshot= capture_screenshot()
-best_target, confidence = find_best_match_in_scene(screenshot, targets, threshold=0.8)
-# %%
-screenshot= capture_screenshot()
-best_target, confidence = find_best_match_using_ssim(screenshot, targets, threshold=0.8)
-# %%
-button_target_directory = os.path.join('data', 'screenshot','button')
-button_targets = load_targets(button_target_directory)
-button_targets
-# %%
-status_target_directory = os.path.join('data', 'screenshot','status')
-status_targets = load_targets(status_target_directory)
-status_targets
-# %%
-#test cycle
-#1. check scene
-#2. find button
-#3. click button
-#4. check scene to make sure it is correct
-def clickButton(start_scene, button, end_scene):
-    screenshot= capture_screenshot()
-    best_target, confidence = find_best_match_in_scene(screenshot, targets, threshold=0.7)
-    if best_target == start_scene:
-        screenshot= capture_screenshot()
-        # check status first
-        injure = check_status(screenshot,status_targets['severe_injure'])
-        # is there anyone severe injured
-        if injure:
-            top_left, width, height = find_template_in_screenshot(screenshot, button_targets['return_base'])
-            adb_tap(top_left[0], top_left[1])
-            time.sleep(2)#TODO: implement wait until
-            print('someone injured, go home')
-            return False
-        top_left, width, height = find_template_in_screenshot(screenshot, button_targets[button])
-        adb_tap(top_left[0], top_left[1])
-        time.sleep(2)#TODO: implement wait until
-        screenshot= capture_screenshot()
-        best_target, confidence = find_best_match_in_scene(screenshot, targets, threshold=0.8)
-        if best_target == end_scene:
-            print('success')
-            return True
-        else:
-            print('ends up in wrong place')
-            return False
-    else:
-        print('start at wrong place')
-        return False
-# %%
-clickButton('home','march_button','march_page')
-# %%
-clickButton('march_page','march_image','battlefield_select')
-# %%
-clickButton('next_step','keep_on','battlefield')
-# %%
-def check_status(screenshot, status, threshold = 0.4):
-    top_left, width, height = find_template_in_screenshot(screenshot, status)
-    if top_left:
-        return True
-    else:
-        return False
-# %%
-status_path = fr'data\screenshot\status\severe_injure.png'
-
-screenshot= capture_screenshot()
-check_status(screenshot,local_image)
-# %%
 def detect_text_from_region(region):
     """
     Use OCR to detect text from a single region.
@@ -420,56 +337,338 @@ for box in matching_regions:
     # Define the region where the template was found (use the template size)
     detect_text_from_region(box)
     
+
 # %%
-# coordinates will be a dictionary to store where to check for status
-# specifically severe injury for now.
-# in each scene, key will be the scene name, correspond to the scene target folder
-coordinates = {"team_select": {"how_many": 6,
-        "coordinates":[(521, 171),
-            (521,312),
-            (521,454),
-            (521,594),
-            (521,734),
-            (521,873)],
-            "w":88,
-            "h":88},
-        #in page team_select ->select, the coordinates are slitely off,
-        #it's still doable with tolerant ~0.7, but just incase I will hard code it.
-        "char_select": {"how_many": 6, 
-        "coordinates":[(521, 173),
-            (521,315),
-            (521,456),
-            (521,598),
-            (521,740),
-            (521,880)],
-            "w":88,
-            "h":88},
-        }
+screenshot= capture_screenshot()
+cropped_region = screenshot[39:39+527, 1026:1026+890]
+cv2.imshow("Matching Regions", resize_image(cropped_region))
+cv2.waitKey(0)  # Press any key to close the window
+cv2.destroyAllWindows()
 # %%
-# Load the target template image
-status_path = fr'data\screenshot\status\severe_injure.png'
-template = cv2.imread(status_path, cv2.IMREAD_COLOR)
-# Get the dimensions of the template
-template_height, template_width = template.shape[:2]
+
 # %%
-for (x,y) in coordinates['char_select']['coordinates']:
+# %%
+target_manager = TargetManager('data/targets.json')
+
+# Load targets
+targets = target_manager.load_targets_from_json()
+targets
+# %%
+def check_area(screenshot, target, scene, threshold = 0.8):
+    target_name = target.tar_name
+    target_type = target.tar_type
+    target_coords = target.get_coordinates(scene)
+    # Load the target template image
+    target_path = os.path.join('data', 'screenshot', target_type, f'{target_name}.png')
+    template = cv2.imread(target_path, cv2.IMREAD_COLOR)
+    # cv2.imshow("Taget", template)
+    # cv2.waitKey(0)  # Press any key to close the window
+    # cv2.destroyAllWindows()
+    # Get the dimensions of the template
+    template_height, template_width = template.shape[:2]
+    w = target_coords['w']
+    h = target_coords['h']
+    for (x,y) in target_coords['coordinates']:
+        
+        region_of_interest = (x, y, w, h)  # Adjust as necessary
+        x, y, w, h = region_of_interest
+        cropped_region = screenshot[y:y+h, x:x+w]
+        # cv2.imshow("Taget", template)
+        # cv2.waitKey(0)  # Press any key to close the window
+        # cv2.destroyAllWindows()
+        # Resize the cropped region to match the template size
+        resized_cropped_region = cv2.resize(cropped_region, (template_width, template_height))
+
+        # Perform template matching
+        result = cv2.matchTemplate(resized_cropped_region, template, cv2.TM_CCOEFF_NORMED)
+        _, max_val, _, max_loc = cv2.minMaxLoc(result)
+
+        # Set a threshold for a match
+        if max_val > threshold:
+            print(f"Target found {max_val}")
+            #found a severe injure. #TODO: develop healing
+            return True
+        else:
+            print(f"No target found {max_val}")
+            return False
+# %%
+screenshot= capture_screenshot()
+check_area(screenshot, targets["yes"], "next_step")
+# %%
+def preprocess_image(image):
+    """
+    Preprocess the image for better template matching.
+    Applies histogram equalization and edge detection (Canny).
+    """
+    # Convert to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
-    region_of_interest = (x, y, 88, 88)  # Adjust as necessary
-    x, y, w, h = region_of_interest
-    screenshot= capture_screenshot()
-    cropped_region = screenshot[y:y+h, x:x+w]
+    # Apply histogram equalization for contrast improvement
+    equalized = cv2.equalizeHist(gray)
+
+    # Apply edge detection using Canny
+    edges = cv2.Canny(equalized, 50, 150)
+
+    return edges
 
 
-    #cropped_gray = cv2.cvtColor(cropped_region, cv2.COLOR_BGR2GRAY)
-    # Resize the cropped region to match the template size
-    resized_cropped_region = cv2.resize(cropped_region, (template_width, template_height))
 
-    # Perform template matching
-    result = cv2.matchTemplate(resized_cropped_region, template, cv2.TM_CCOEFF_NORMED)
-    _, max_val, _, max_loc = cv2.minMaxLoc(result)
+# %%
+# Global variables to store the coordinates
+ref_point = []
+cropping = False
 
-    # Set a threshold for a match
-    if max_val > 0.8:
-        print(f"Match found {max_val}")
+def click_and_crop(event, x, y, flags, param):
+    global ref_point, cropping
+    
+    # Start recording the initial coordinates when the left mouse button is pressed
+    if event == cv2.EVENT_LBUTTONDOWN:
+        ref_point = [(x, y)]
+        cropping = True
+
+    # Update the second point when the mouse is dragged
+    elif event == cv2.EVENT_MOUSEMOVE and cropping:
+        # Show the rectangle being drawn
+        img_copy = param.copy()
+        cv2.rectangle(img_copy, ref_point[0], (x, y), (0, 255, 0), 2)
+        cv2.imshow("image", img_copy)
+
+    # Record the endpoint and stop cropping when the left mouse button is released
+    elif event == cv2.EVENT_LBUTTONUP:
+        ref_point.append((x, y))
+        cropping = False
+        # Draw the rectangle on the image
+        cv2.rectangle(param, ref_point[0], ref_point[1], (0, 255, 0), 2)
+        cv2.imshow("image", param)
+
+def crop_image(image):
+    # Load the image and clone it for resetting if needed
+    
+    clone = image.copy()
+    cv2.namedWindow("image")
+    cv2.setMouseCallback("image", click_and_crop, param=clone)
+
+    # Loop until the user hits 'c' to confirm the crop or 'r' to reset
+    while True:
+        cv2.imshow("image", image)
+        key = cv2.waitKey(1) & 0xFF
+
+        # Press 'r' to reset the cropping region
+        if key == ord('r'):
+            image = clone.copy()
+
+        # Press 'c' to confirm the cropping region
+        elif key == ord('c'):
+            break
+
+    cv2.destroyAllWindows()
+
+    # Check if the points are valid
+    if len(ref_point) == 2:
+        # Return the cropped region and the coordinates as x, y, w, h in a dictionary
+        x1, y1 = ref_point[0]
+        x2, y2 = ref_point[1]
+        
+        # Calculate width and height
+        w = x2 - x1
+        h = y2 - y1
+        
+        # Create the region of interest (ROI)
+        roi = clone[y1:y2, x1:x2]
+        
+        # Return a dictionary with coordinates and dimensions
+        return roi, {"coordinates": [(x1, y1)], "w": w, "h": h}
     else:
-        print(f"No match found {max_val}")
+        print("No valid region selected.")
+        return None, None
+# %%
+
+screenshot = capture_screenshot()
+cropped_region, coordinates = crop_image(screenshot)
+
+if cropped_region is not None:
+    print(f"Cropped coordinates: {coordinates}")
+    cv2.imshow("Cropped Region", cropped_region)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+# %%
+
+# %%
+map_manager = MapManager('data/map_target.json')
+
+# Load targets
+map_target = map_manager.load_maps_from_json()
+# %%
+map_target['2_3'].get_stops()
+# %%
+def check_end_pt(screenshot, map, threshold = 0.8):
+    best_match_name = None
+    best_confidence = 0
+    map_name = map.map_name
+    stop_coords = map.get_stops()
+    # the path is a path to the map directory
+    map_path = os.path.join('data', 'map', map_name)
+    maps = load_targets(map_path)
+    for stop in stop_coords:
+        w = stop_coords[stop]['w']
+        h = stop_coords[stop]['h']
+        [(x,y)] = stop_coords[stop]['coordinates']#for map there will only be one x,y
+        for map_name, template_path in maps.items():
+            # Load the template image 
+            template = cv2.imread(template_path, cv2.IMREAD_COLOR)
+            
+            if template is None:
+                print(f"Error: Template image at {template_path} could not be loaded.")
+                continue
+            template_height, template_width = template.shape[:2]
+            
+            cropped_region = screenshot[y:y+h, x:x+w]
+            # cv2.imshow("Taget", cropped_region)
+            # cv2.waitKey(0)  # Press any key to close the window
+            # cv2.destroyAllWindows()
+            # Resize the cropped region to match the template size
+            resized_cropped_region = cv2.resize(cropped_region, (template_width, template_height))
+            #template_blurred = cv2.GaussianBlur(template, (5, 5), 0)
+            
+            result = cv2.matchTemplate(resized_cropped_region, template, cv2.TM_CCOEFF_NORMED) 
+            # Get the best match position
+            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+            print(f'target: {map_name} has confidence: {max_val}')
+            # Check if the current match is the best one so far
+            if max_val > best_confidence and max_val >= threshold:
+                best_confidence = max_val
+                best_match_name = map_name
+
+    if best_match_name:
+        print(f"Best match: {best_match_name} with confidence: {best_confidence}")
+        return best_match_name, best_confidence
+    else:
+        print("No good match found.")
+        return None, None
+
+# %%
+screenshot= capture_screenshot()
+check_end_pt(screenshot, map_target["2_3"],threshold=0.8)
+# %%
+# %%
+# %%
+#test cycle
+#1. check scene
+#2. find button
+#3. click button
+#4. check scene to make sure it is correct
+def clickButton(start_scene, button, end_scene):
+    screenshot= capture_screenshot()
+    best_target, confidence = find_best_match_in_scene(screenshot, scene_targets, threshold=0.7)
+    if best_target == start_scene:
+        screenshot= capture_screenshot()
+        wanted_button = check_area(screenshot, targets[button], start_scene,threshold=0.4)
+        if wanted_button:
+            #found march image
+            coords = targets[button].get_coordinates(start_scene)
+            [(x,y)] = coords['coordinates']
+            w = coords['w']
+            h = coords['h']
+            middle_x = w // 2
+            middle_y = h // 2
+            repeat_count = 0
+            while True:
+                repeat_count+=1
+                adb_tap(x+middle_x, y+middle_y)
+                time.sleep(2)#TODO: implement wait until, 
+                screenshot= capture_screenshot()
+                best_target, confidence = find_best_match_in_scene(screenshot, scene_targets, threshold=0.8)
+                if best_target == end_scene:
+                    print('success')
+                    break
+                elif repeat_count > 10:
+                    print(f'after 10 click still not at right place, at {best_target}')
+                    return False
+                else:
+                    print(f'end up at wrong place {best_target}')
+                    return False
+            return True
+    else:
+        print('start at wrong place')
+        return False
+# %%
+# %%
+# Example usage
+connect_adb()
+# %%
+screenshot_image = capture_screenshot()
+
+local_image = fr'data\screenshot\status\severe_injure.png'
+
+# Display the screenshot (optional)
+top_left, width, height = find_template_in_screenshot(screenshot_image, local_image)
+
+
+# %%
+
+# %%
+
+scene_directory = os.path.join('data', 'screenshot','scene')
+scene_targets = load_targets(scene_directory)
+scene_targets
+# %%
+screenshot= capture_screenshot()
+best_target, confidence = find_best_match_in_scene(screenshot, targets, threshold=0.8)
+# %%
+screenshot= capture_screenshot()
+best_target, confidence = find_best_match_using_ssim(screenshot, targets, threshold=0.8)
+# %%
+button_target_directory = os.path.join('data', 'screenshot','button')
+button_targets = load_targets(button_target_directory)
+button_targets
+# %%
+status_target_directory = os.path.join('data', 'screenshot','status')
+status_targets = load_targets(status_target_directory)
+status_targets
+# %%
+clickButton('home','march_button','march_page')
+# %%
+clickButton('march_page','march_image','battlefield_select')
+
+# %%
+def click1():
+    adb_tap(438, 594)
+def click2():
+    adb_tap(962, 601)
+def click3():
+    adb_tap(438, 809)
+def click4():
+    adb_tap(962, 834)
+# %%
+click3()
+# %%
+clickButton('battle_set_out','march_now','battlefield')
+# %%
+clickButton('next_step','keep_on','battlefield')
+# %%
+screenshot= capture_screenshot()
+
+check_end_pt(screenshot, map_target["2_3"],threshold=0.7)# not working good yet TODO
+# %%
+# %%
+clickButton('next_step','return_base','go_home')
+# %%
+clickButton('go_home','yes','home',threshold=0.7)
+# %%
+#try a full cycle
+#1. from home click march button
+#2. from march_page click march image
+#3. TODO select era click era
+#4. TODO select location click location
+#5. from battle_set_out click march_now
+# REPEAT START (random clicking on buttonless area TODO)
+#6. from next_step check_stop_pt
+    #6-1. if stop, click return_base
+    #6-2. click yes
+#7. from next_step click keep_on
+#8. check severe_injure warning 1&2
+    #8-1. if so, click return_base
+    #8-2. click yes
+    #8-3. check if at home, END REPEAT
+#9. TODO implement healing
+#10. END REPEAT, START AGAIN.
