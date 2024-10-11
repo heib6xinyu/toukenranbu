@@ -143,6 +143,187 @@
     },
     {
         "tar_type": "button",
+        "tar_name": "filter_confirm",
+        "scenes":
+            {
+                "filter_all": {
+                    "coordinates": [[1317, 794]],
+                    "w": 247,
+                    "h": 81
+                },
+                "filter_sword": {
+                    "coordinates": [[1317, 794]],
+                    "w": 247,
+                    "h": 81
+                },
+                "filter_duandao_ji": {
+                    "coordinates": [[1317, 794]],
+                    "w": 247,
+                    "h": 81
+                },
+                "filter_taidao_ji": {
+                    "coordinates": [[1317, 794]],
+                    "w": 247,
+                    "h": 81
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "ji",
+        "scenes":
+            {
+                "filter_all": {
+                    "coordinates": [[671, 691]],
+                    "w": 242,
+                    "h": 83
+                },
+                "filter_duandao_ji": {
+                    "coordinates": [[671, 691]],
+                    "w": 242,
+                    "h": 83
+                },
+                "filter_taidao_ji": {
+                    "coordinates": [[671, 691]],
+                    "w": 242,
+                    "h": 83
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "duandao",
+        "scenes":
+            {
+                "filter_all": {
+                    "coordinates": [[667, 271]],
+                    "w": 250,
+                    "h": 84
+                },
+                "filter_duandao_ji": {
+                    "coordinates": [[667, 271]],
+                    "w": 250,
+                    "h": 84
+                },
+                "filter_taidao_ji": {
+                    "coordinates": [[667, 271]],
+                    "w": 250,
+                    "h": 84
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "duandao_selected",
+        "scenes":
+            {
+                "filter_all": {
+                    "coordinates": [[667, 271]],
+                    "w": 250,
+                    "h": 84
+                },
+                "filter_duandao_ji": {
+                    "coordinates": [[667, 271]],
+                    "w": 250,
+                    "h": 84
+                },
+                "filter_taidao_ji": {
+                    "coordinates": [[667, 271]],
+                    "w": 250,
+                    "h": 84
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "taidao",
+        "scenes":
+            {
+                "filter_all": {
+                    "coordinates": [[667, 373]],
+                    "w": 250,
+                    "h": 84
+                },
+                "filter_duandao_ji": {
+                    "coordinates": [[667, 373]],
+                    "w": 250,
+                    "h": 84
+                },
+                "filter_taidao_ji": {
+                    "coordinates": [[667, 373]],
+                    "w": 250,
+                    "h": 84
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "taidao_selected",
+        "scenes":
+            {
+                "filter_all": {
+                    "coordinates": [[667, 373]],
+                    "w": 250,
+                    "h": 84
+                },
+                "filter_duandao_ji": {
+                    "coordinates": [[667, 373]],
+                    "w": 250,
+                    "h": 84
+                },
+                "filter_taidao_ji": {
+                    "coordinates": [[667, 373]],
+                    "w": 250,
+                    "h": 84
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "ji_selected",
+        "scenes":
+            {
+                "filter_all": {
+                    "coordinates": [[671, 691]],
+                    "w": 242,
+                    "h": 83
+                },
+                "filter_duandao_ji": {
+                    "coordinates": [[671, 691]],
+                    "w": 242,
+                    "h": 83
+                },
+                "filter_taidao_ji": {
+                    "coordinates": [[671, 691]],
+                    "w": 242,
+                    "h": 83
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "add_char",
+        "scenes":
+            {
+                "healing_team": {
+                    "coordinates": [[737, 329]],
+                    "w": 325,
+                    "h": 83
+                },
+                "add_teammate": {
+                    "coordinates": [[737, 188],
+                                    [738, 329],
+                                    [737, 469],
+                                    [738, 608],
+                                    [739, 749],
+                                    [738, 889]],
+                    "w": 190,
+                    "h": 92
+                }
+            }
+    },
+    {
+        "tar_type": "button",
         "tar_name": "march_now",
         "scenes":
             {
