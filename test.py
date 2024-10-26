@@ -11,6 +11,11 @@ import pytesseract
 from utility import *
 from march import March
 # %%
+# %%
+# Example usage
+connect_adb()
+# %%
+
 screenshot= capture_screenshot()
 status_path = fr'data\screenshot\button\test_ocr.png'
 region = cv2.imread(status_path)
@@ -44,9 +49,7 @@ map_targets = map_manager.load_maps_from_json()
 map_targets['2_3'].get_stops()
 
 # %%
-# %%
-# Example usage
-connect_adb()
+
 # %%
 screenshot_image = capture_screenshot()
 
@@ -111,3 +114,8 @@ march.clickButton('go_home','yes','home')
 # %%
 march.march("5_4",False,False,1)
 # %%
+_, coord = crop_from_screenshot()
+# %%
+while True:
+    march.march_udg(99,3)
+    march.check_state_reconnect(3)#TODO: arrangement just for now.

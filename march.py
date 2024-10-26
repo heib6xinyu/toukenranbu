@@ -25,7 +25,9 @@ class March:
     def click_random(self):
         adb_tap(944,313)
         return True
-
+    def click_x_y(self,x,y):
+        adb_tap(x,y)
+        return True
     
     #2. usually by default it's the first team showing
     #3. 
@@ -174,7 +176,183 @@ class March:
                 break
         return True
     
+    def home_to_battle_select(self, speed):
+        screenshot= capture_screenshot()
+        at_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
+        if not at_home:
+            print("Not starting at home.")
+            return False
+        #1. from home click march button
+        clicked = self.clickButton('home','march_button')
+        while clicked:
+            time.sleep(speed)
+            screenshot= capture_screenshot()
+            matched, confidence = self.match_scene(screenshot, self.scene_path['march_page'], threshold=0.6)
+            if matched:
+                break
+        #2. from march_page click march image
+        clicked = self.clickButton('march_page','march_image')
+        while clicked:
+            time.sleep(speed)
+            screenshot= capture_screenshot()
+            matched, confidence = self.match_scene(screenshot, self.scene_path['battlefield_select'], threshold=0.6)
+            if matched:
+                break
+        return True
     
+    def repair(self, type, ji, injury_level, speed):
+        """
+        Repair certain type of touken above certain injury_level
+        
+        Parameters:
+        -type: type of token, duandao, taidao...
+        -ji: whether it is ji touken
+        -injury_level: l,m,s for light, medium, severe
+
+        Cycle:
+        1.from home click repair button
+        2.from repair page, filter order button
+        3.TODO by type, select the type of token
+        4.TODO by ji, select the ji button
+        5.TODO by injury_level, select the injury_level, at 10/26/2024, I will hard code what to select
+        --repeat 7-11 until 6. check for no_repair_need_scene
+        7.select the filtered touken (one by one), {'coordinates': [(857, 177)], 'w': 147, 'h': 106}
+        8.-from repair_select scene select the start repair button
+        9.-from repair scene, select the speed_up button
+        10.-from use_speed_up_tool_scene click yes (768,768)
+        11.-wait for 4 secend(for repair animation)
+         
+        """
+        screenshot= capture_screenshot()
+        matched, confidence = self.match_scene(screenshot, self.scene_path["home"], threshold=0.7)
+        if not matched:
+            print("Repair task, not at home.")
+            return False
+        clicked = self.clickButton('home','repair_button')
+        while clicked:
+            time.sleep(speed)
+            screenshot= capture_screenshot()
+            
+            matched, confidence = self.match_scene(screenshot, self.scene_path['repair'], threshold=0.6)
+            if matched:
+                break
+        self.click_x_y(752,285)#first repair slot
+        while True:
+            time.sleep(speed)
+            screenshot= capture_screenshot()
+            matched, confidence = self.match_scene(screenshot, self.scene_path['repair_select'], threshold=0.6)
+            if matched:
+                break
+        clicked = self.clickButton("repair_select","filter_order")
+        while clicked:
+            time.sleep(speed)
+            screenshot= capture_screenshot()
+            
+            matched, confidence = self.match_scene(screenshot, self.scene_path['repair_select_option'], threshold=0.6)
+            if matched:
+                break
+        self.click_x_y(807,305)
+        time.sleep(1)
+        self.click_x_y(807,837)
+        time.sleep(1)
+        self.click_x_y(1100,837)
+        time.sleep(1)
+        self.click_x_y(1436,837)
+        screenshot= capture_screenshot()
+        matched, confidence = self.match_scene(screenshot, self.scene_path['no_repair_need'], threshold=0.6)
+        while not matched:
+            self.click_x_y(921,233)
+            time.sleep(1)
+            self.click_x_y(1436,837)
+            time.sleep(1)
+            self.click_x_y(1420,290)
+            time.sleep(1)
+            self.click_x_y(768,768)
+            time.sleep(5)
+            self.click_x_y(752,285)#first repair slot
+            screenshot= capture_screenshot()
+            matched, confidence = self.match_scene(screenshot, self.scene_path['no_repair_need'], threshold=0.6)
+        print("Repair task, finished repair.")
+        #click home button
+        self.click_x_y(1816,1033)
+        return True
+
+
+        
+
+    def march_udg(self, level, speed):
+        """
+        The march method for underground activity.
+        
+        Parameters:
+        -level: which level to go
+
+        Cycle:
+        1. from home click march button
+        2. from march_page click march image
+        3. from battlefield_select select underground activity
+        4. from underground_scene click select_team(1418,919)
+        5. from battle_set_out click march_now
+        6. from underground_march_confirm click yes(780,567)
+        --repeat 7. click keep_on(1185,733) until stopping criteria--
+            8. if see home and severe_injure_warning1, exit loop
+        9. repair all mid injure&severe injure 极短
+        """
+        self.repair("duandao", True, "m", 2)
+        time.sleep(speed)
+        at_battlefield = self.home_to_battle_select(speed)
+        if not at_battlefield:
+            print("Didn't ends up at battlefield_select")
+            return False
+        clicked = self.clickButton("battlefield_select","underground")
+        while clicked:
+            time.sleep(speed)
+            screenshot= capture_screenshot()
+            matched, confidence = self.match_scene(screenshot, self.scene_path['underground_scene'], threshold=0.6)
+            if matched:
+                break
+        self.click_x_y(1418,919)
+        time.sleep(1)
+        self.click_x_y(1418,919)
+        time.sleep(1)
+        self.click_x_y(780,567)#assuming setting out will not have severe injure touken
+        time.sleep(1)
+        screenshot= capture_screenshot()
+        matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
+        matched_injure, confidence = self.match_scene(screenshot, self.scene_path['severe_injure_warning1'], threshold=0.7)
+        while not matched_home and not matched_injure:
+            self.click_x_y(1185,733)
+            time.sleep(3)
+            screenshot= capture_screenshot()
+            matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
+            matched_injure, confidence = self.match_scene(screenshot, self.scene_path['severe_injure_warning1'], threshold=0.7)
+        if matched_injure:
+            self.click_x_y(1185,733)#click no first.
+            time.sleep(1)
+            at_home = self.go_home(speed)
+            if at_home:
+                print("Successfully runned once, keep going.")
+                return True
+        return True
+                
+    
+
+    def check_state_reconnect(self, speed):
+        screenshot= capture_screenshot()
+        scene_now, confidence = find_best_match_in_scene(screenshot, self.scene_path, threshold=0.6)
+        if scene_now == 'next_step': #TODO, implement a way to reconnect to the current task...
+            at_home = self.go_home(speed)
+            if at_home:
+                print("Successfully runned once, keep going.")
+                return True
+            
+            else:
+                print(f"No preset solution for this scene: {scene_now}")
+                return False
+    
+
+
+
     #try a full cycle
     #1. from home click march button
     #2. from march_page click march image
@@ -210,27 +388,10 @@ class March:
         - again: boolean of whether to keep marching the same map
         
         """
-        screenshot= capture_screenshot()
-        at_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.7)
-        if not at_home:
-            print("Not starting at home.")
+        at_battlefield = self.home_to_battle_select(speed)
+        if not at_battlefield:
+            print("Didn't ends up at battlefield")
             return False
-        #1. from home click march button
-        clicked = self.clickButton('home','march_button')
-        while clicked:
-            time.sleep(speed)
-            screenshot= capture_screenshot()
-            matched, confidence = self.match_scene(screenshot, self.scene_path['march_page'], threshold=0.8)
-            if matched:
-                break
-        #2. from march_page click march image
-        clicked = self.clickButton('march_page','march_image')
-        while clicked:
-            time.sleep(speed)
-            screenshot= capture_screenshot()
-            matched, confidence = self.match_scene(screenshot, self.scene_path['battlefield_select'], threshold=0.8)
-            if matched:
-                break
         #3. TODO select era click era
         #4. TODO select location click location
         

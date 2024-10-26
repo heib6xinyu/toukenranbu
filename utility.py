@@ -412,7 +412,7 @@ def crop_from_screenshot():
     cropping = False
 
     def click_and_crop(event, x, y, flags, param):
-        global ref_point, cropping
+        nonlocal ref_point, cropping
         
         # Start recording the initial coordinates when the left mouse button is pressed
         if event == cv2.EVENT_LBUTTONDOWN:
@@ -436,7 +436,6 @@ def crop_from_screenshot():
 
     def crop_image(image):
         # Load the image and clone it for resetting if needed
-        
         clone = image.copy()
         cv2.namedWindow("image")
         cv2.setMouseCallback("image", click_and_crop, param=clone)
@@ -475,6 +474,7 @@ def crop_from_screenshot():
             print("No valid region selected.")
             return None, None
 
+    # Capture a screenshot (replace this with your actual screenshot function)
     screenshot = capture_screenshot()
     cropped_region, coordinates = crop_image(screenshot)
 

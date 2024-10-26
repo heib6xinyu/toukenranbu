@@ -52,6 +52,18 @@
     },
     {
         "tar_type": "button",
+        "tar_name": "underground",
+        "scenes":
+            {
+                "battlefield_select": {
+                    "coordinates": [[736,295]],
+                    "w": 475,
+                    "h": 124
+                }
+            }
+    },
+    {
+        "tar_type": "button",
         "tar_name": "yes",
         "scenes":
             {
@@ -138,6 +150,30 @@
                     "coordinates": [[1725, 978]],
                     "w": 190,
                     "h": 92
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "filter_order",
+        "scenes":
+            {
+                "repair_select": {
+                    "coordinates": [[173, 1010]],
+                    "w": 223,
+                    "h": 47
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "repair_button",
+        "scenes":
+            {
+                "home": {
+                    "coordinates": [[1725, 536]],
+                    "w": 194,
+                    "h": 93
                 }
             }
     },
