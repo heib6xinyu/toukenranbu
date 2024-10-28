@@ -17,7 +17,7 @@ class Target:
 
     def get_coordinates(self, scene):
         """
-        Get the coordinates for a specific scene.
+        Get the coordinates of target for a specific scene.
         
         Parameters:
         - scene (str): The scene to get coordinates for.
@@ -28,6 +28,12 @@ class Target:
                         The h
         """
         return self.scenes[scene]
+    
+    def get_num(self, scene):
+        """
+        return the number of target in given scene
+        """
+        return len(self.scenes[scene]['coordinates'])
     
     def get_name(self):
         return self.tar_name

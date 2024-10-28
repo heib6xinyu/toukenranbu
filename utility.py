@@ -321,7 +321,13 @@ def detect_text_from_region(region):
         return None
     
 
-def check_area(screenshot, target, scene, threshold = 0.8):
+def check_area(screenshot, target, scene, num=0, threshold = 0.8):
+    """
+    This function now will just try to detect matched target in
+        the given possible coordinate from target
+        TODO: may want to let it return a list of true and false,
+        corresponding to each possible location, whether the target is there or not
+    """
     target_name = target.tar_name
     target_type = target.tar_type
     target_coords = target.get_coordinates(scene)
@@ -335,6 +341,29 @@ def check_area(screenshot, target, scene, threshold = 0.8):
     template_height, template_width = template.shape[:2]
     w = target_coords['w']
     h = target_coords['h']
+    if num != 0:
+        x,y = target_coords['coordinates'][num]
+        region_of_interest = (x, y, w, h)  # Adjust as necessary
+        x, y, w, h = region_of_interest
+        cropped_region = screenshot[y:y+h, x:x+w]
+        # cv2.imshow("Taget", template)
+        # cv2.waitKey(0)  # Press any key to close the window
+        # cv2.destroyAllWindows()
+        # Resize the cropped region to match the template size
+        resized_cropped_region = cv2.resize(cropped_region, (template_width, template_height))
+
+        # Perform template matching
+        result = cv2.matchTemplate(resized_cropped_region, template, cv2.TM_CCOEFF_NORMED)
+        _, max_val, _, max_loc = cv2.minMaxLoc(result)
+
+        # Set a threshold for a match
+        if max_val > threshold:
+            print(f"Target found : {max_val}")
+            return True
+        else:
+            print(f"No target found, best confidence: {max_val} at ({x},{y})")
+            return False
+        
     for (x,y) in target_coords['coordinates']:
         
         region_of_interest = (x, y, w, h)  # Adjust as necessary
@@ -352,11 +381,10 @@ def check_area(screenshot, target, scene, threshold = 0.8):
 
         # Set a threshold for a match
         if max_val > threshold:
-            print(f"Target found {max_val}")
-            #found a severe injure. #TODO: develop healing
+            print(f"Target found : {max_val}")
             return True
         else:
-            print(f"No target found {max_val}")
+            print(f"No target found, best confidence: {max_val} at ({x},{y})")
             return False
         
 

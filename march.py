@@ -1,6 +1,6 @@
 from utility import *
 class March:
-    def __init__(self, team, scene_path, battlefield_path, button_path, status_path, button_targets, map_targets):
+    def __init__(self, team, scene_path, battlefield_path, button_path, status_path, button_targets, map_targets, timeout = 60, speed = 3):
         self.team = team
         self.scene_path = scene_path  # Dictionary of path to scenes
         self.battlefield_path = battlefield_path  # Dictionary of path to battlefields
@@ -9,6 +9,8 @@ class March:
         self.button_targets = button_targets #dimension info for buttons
         self.map_targets = map_targets #dimension info for maps
         self.state = None
+        self.timeout = timeout
+        self.speed = speed
 
     def click1(self):
         adb_tap(438, 594)
@@ -49,16 +51,14 @@ class March:
             return False
 
         
-    def clickButton(self, start_scene, button):
-        # screenshot= capture_screenshot()
-        # matched, confidence = match_scene(screenshot, self.scene_path[start_scene], threshold=0.7)
-        # if matched:
+    def clickButton(self, start_scene, button, num = 0, threshold=0.5):
         screenshot= capture_screenshot()
-        wanted_button = check_area(screenshot, self.button_targets[button], start_scene,threshold=0.5)
+        wanted_button = check_area(screenshot, self.button_targets[button], start_scene, num, threshold)
         if wanted_button:
-            #found march image
+            #at start scene found wanted button
             coords = self.button_targets[button].get_coordinates(start_scene)
-            [(x,y)] = coords['coordinates']
+            x,y = coords['coordinates'][num]
+            
             w = coords['w']
             h = coords['h']
             middle_x = w // 2
@@ -67,11 +67,9 @@ class March:
             adb_tap(x+middle_x, y+middle_y)
             return True
         else:
-            print(f'Not wanted button {button}')
+            print(f'Not wanted button {button} at {start_scene}')
             return False
-        # else:
-        #     print('Not wanted start_scene')
-        #     return False
+        
 
     def match_scene(self, screenshot, scene_template, threshold=0.8):
         """
@@ -104,7 +102,7 @@ class March:
         print(f"No match for {scene_template}, confidence {max_val}.")
         return False, None
 
-    def wait_for_scene(self, scene, speed):
+    def wait_for_scene(self, scene, threshold = 0.8):
         '''
         Helper function, wait to see if the screen is scene, return boolean
         
@@ -114,35 +112,40 @@ class March:
         Return:
         - boolean
         '''
+        start_time = time.time()
         while True:
             self.click_random()
-            time.sleep(speed)
+            time.sleep(self.speed)
             screenshot = capture_screenshot()
-            matched, confidence = self.match_scene(screenshot, self.scene_path["severe_injure_warning1"], threshold=0.7)  
+            matched, confidence = self.match_scene(screenshot, self.scene_path[scene], threshold)  
             if matched:
                 return True
+            elapsed_time = time.time() - start_time
+            if elapsed_time > self.timeout:
+                print(f"Waiting for scene {scene}, timeout. End task.")
+                return False
             
 
 
-    def injury_check_in_battle(self, speed):
+    def injury_check_in_battle(self):
         #return if someone is injured
         #8. check severe_injure warning 1&2
         while True:
             self.click_random()
-            time.sleep(speed)
+            time.sleep(self.speed)
             screenshot = capture_screenshot()
             matched, confidence = self.match_scene(screenshot, self.scene_path["severe_injure_warning1"], threshold=0.7)  
             if matched:
                 #8-1. if so, click no
                 clicked = self.clickButton('severe_injure_warning1','no')
                 while clicked:
-                    time.sleep(speed)
+                    time.sleep(self.speed)
                     screenshot= capture_screenshot()
                     
                     matched, confidence = self.match_scene(screenshot, self.scene_path['next_step'], threshold=0.7)
                     if matched:
                         break
-                at_home = self.go_home(speed)
+                at_home = self.go_home()
                 return at_home
             else:
                 matched, confidence = self.match_scene(screenshot, self.scene_path["next_step"], threshold=0.7)
@@ -156,10 +159,10 @@ class March:
                 break
         return False
 
-    def go_home(self, speed):
+    def go_home(self):
         clicked = self.clickButton('next_step','return_base')
         while clicked:
-            time.sleep(speed)
+            time.sleep(self.speed)
             screenshot= capture_screenshot()
             
             matched, confidence = self.match_scene(screenshot, self.scene_path['go_home'], threshold=0.7)
@@ -168,7 +171,7 @@ class March:
         #6-2. click yes
         clicked = self.clickButton('go_home','yes')
         while clicked:
-            time.sleep(speed)
+            time.sleep(self.speed)
             screenshot= capture_screenshot()
             
             matched, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.7)
@@ -176,7 +179,7 @@ class March:
                 break
         return True
     
-    def home_to_battle_select(self, speed):
+    def home_to_battle_select(self):
         screenshot= capture_screenshot()
         at_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
         if not at_home:
@@ -185,7 +188,7 @@ class March:
         #1. from home click march button
         clicked = self.clickButton('home','march_button')
         while clicked:
-            time.sleep(speed)
+            time.sleep(self.speed)
             screenshot= capture_screenshot()
             matched, confidence = self.match_scene(screenshot, self.scene_path['march_page'], threshold=0.6)
             if matched:
@@ -193,14 +196,17 @@ class March:
         #2. from march_page click march image
         clicked = self.clickButton('march_page','march_image')
         while clicked:
-            time.sleep(speed)
+            time.sleep(self.speed)
             screenshot= capture_screenshot()
             matched, confidence = self.match_scene(screenshot, self.scene_path['battlefield_select'], threshold=0.6)
             if matched:
                 break
         return True
     
-    def repair(self, type, ji, injury_level, speed):
+    def use_speed_up_tool(self):
+        #TODO rethink whether this is necessary
+        pass
+    def repair(self, type, ji, injury_level):
         """
         Repair certain type of touken above certain injury_level
         
@@ -230,7 +236,7 @@ class March:
             return False
         clicked = self.clickButton('home','repair_button')
         while clicked:
-            time.sleep(speed)
+            time.sleep(self.speed)
             screenshot= capture_screenshot()
             
             matched, confidence = self.match_scene(screenshot, self.scene_path['repair'], threshold=0.6)
@@ -238,14 +244,14 @@ class March:
                 break
         self.click_x_y(752,285)#first repair slot
         while True:
-            time.sleep(speed)
+            time.sleep(self.speed)
             screenshot= capture_screenshot()
             matched, confidence = self.match_scene(screenshot, self.scene_path['repair_select'], threshold=0.6)
             if matched:
                 break
         clicked = self.clickButton("repair_select","filter_order")
         while clicked:
-            time.sleep(speed)
+            time.sleep(self.speed)
             screenshot= capture_screenshot()
             
             matched, confidence = self.match_scene(screenshot, self.scene_path['repair_select_option'], threshold=0.6)
@@ -253,8 +259,8 @@ class March:
                 break
         self.click_x_y(807,305)
         time.sleep(1)
-        self.click_x_y(807,837)
-        time.sleep(1)
+        #self.click_x_y(807,837)
+        #time.sleep(1)
         self.click_x_y(1100,837)
         time.sleep(1)
         self.click_x_y(1436,837)
@@ -278,9 +284,31 @@ class March:
         return True
 
 
+    def equipt(self, team_num = 1):
+        """
+        Helper method to replace equiptment
+
+        Parameters:
+        -team_num: which team to equipt
+
+        Cycle:
+        1. start from home, click team button
+        2. from team select, from top to bottom, click select, automatic equipt, confirm
+        3. return home
+        """   
+        screenshot= capture_screenshot()
+        at_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
+        if not at_home:
+            print("Task put equiptment. Not starting at home.")
+            return False
+        clicked = self.clickButton("home","team_button")
+        at_correct_scene = self.wait_for_scene('team_select',0.7)
+        if not at_correct_scene:
+            return False
+        
         
 
-    def march_udg(self, level, speed):
+    def march_udg(self, level):
         """
         The march method for underground activity.
         
@@ -294,26 +322,33 @@ class March:
         4. from underground_scene click select_team(1418,919)
         5. from battle_set_out click march_now
         6. from underground_march_confirm click yes(780,567)
-        --repeat 7. click keep_on(1185,733) until stopping criteria--
+        --repeat 7. click keep_on(1242,659)/find the reverse format until stopping criteria--
             8. if see home and severe_injure_warning1, exit loop
         9. repair all mid injure&severe injure 极短
         """
-        self.repair("duandao", True, "m", 2)
-        time.sleep(speed)
-        at_battlefield = self.home_to_battle_select(speed)
+        self.repair("duandao", True, "m")
+        time.sleep(self.speed)
+        at_battlefield = self.home_to_battle_select()
         if not at_battlefield:
             print("Didn't ends up at battlefield_select")
             return False
         clicked = self.clickButton("battlefield_select","underground")
         while clicked:
-            time.sleep(speed)
+            time.sleep(self.speed)
             screenshot= capture_screenshot()
             matched, confidence = self.match_scene(screenshot, self.scene_path['underground_scene'], threshold=0.6)
             if matched:
                 break
         self.click_x_y(1418,919)
+        
+        while True:
+            time.sleep(self.speed)
+            screenshot= capture_screenshot()
+            matched, confidence = self.match_scene(screenshot, self.scene_path['battle_set_out'], threshold=0.6)
+            if matched:
+                break
         time.sleep(1)
-        self.click_x_y(1418,919)
+        self.click_x_y(1418,919)#set out now
         time.sleep(1)
         self.click_x_y(780,567)#assuming setting out will not have severe injure touken
         time.sleep(1)
@@ -321,15 +356,15 @@ class March:
         matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
         matched_injure, confidence = self.match_scene(screenshot, self.scene_path['severe_injure_warning1'], threshold=0.7)
         while not matched_home and not matched_injure:
-            self.click_x_y(1185,733)
-            time.sleep(3)
+            self.click_x_y(1185,733)#(1281,659)手动逆行
+            time.sleep(2)
             screenshot= capture_screenshot()
             matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
             matched_injure, confidence = self.match_scene(screenshot, self.scene_path['severe_injure_warning1'], threshold=0.7)
         if matched_injure:
             self.click_x_y(1185,733)#click no first.
             time.sleep(1)
-            at_home = self.go_home(speed)
+            at_home = self.go_home()
             if at_home:
                 print("Successfully runned once, keep going.")
                 return True
@@ -337,18 +372,49 @@ class March:
                 
     
 
-    def check_state_reconnect(self, speed):
+    def check_state_reconnect(self):
+        """
+        Helper function to reconnect to task if stuck at unexpected place
+
+        So far it's go home and restart.
+        """
+        click_home_botton = ["underground_march_confirm","add_teammate","battle_set_out","battlefield_select","char_select","healing_team","march_page","no_repair_need","repair","repair_select","team_select", "underground_select"]
         screenshot= capture_screenshot()
         scene_now, confidence = find_best_match_in_scene(screenshot, self.scene_path, threshold=0.6)
         if scene_now == 'next_step': #TODO, implement a way to reconnect to the current task...
-            at_home = self.go_home(speed)
+            #self.injury_check_in_battle
+            at_home = self.go_home()
             if at_home:
-                print("Successfully runned once, keep going.")
+                print("From next_step, Reconnected.")
                 return True
-            
-            else:
-                print(f"No preset solution for this scene: {scene_now}")
+        elif scene_now in click_home_botton:
+            self.click_x_y(1814,1024)#home button
+            print(f"From {scene_now}, Reconnected.")
+            return True
+        elif scene_now == 'travel_return':
+            self.wait_for_scene('home',0.7)
+        elif  scene_now == 'team_in_repair':
+            clicked = self.clickButton('team_in_repair','repair_button')
+            at_repair = self.wait_for_scene('repair')
+            if not at_repair:
+                print(f'from {scene_now} clicked repair button, not end up in repair.')
                 return False
+            else:
+                num_of_button = self.button_targets['speed_up'].get_num("repair")
+                for i in range(num_of_button):
+                    #for each repairing touken, speed up
+                    clicked = self.clickButton('repair','speed_up', i ,0.8)
+                    if clicked:
+                        self.click_x_y(768,768)# confirm speed up
+                        time.sleep(4) #wait for animation 
+                print('Speeded up all repair.')
+                return True
+
+        
+        else:
+            self.wait_for_scene('home',0.7)
+            print(f"No preset solution for this scene: {scene_now}")
+            return False
     
 
 
@@ -375,7 +441,7 @@ class March:
     
         
 
-    def march(self, map_name, stop_before_boss, healing, speed):
+    def march(self, map_name, stop_before_boss, healing):
         """
         Compare multiple target templates to the current screenshot and return the name of the target with the highest confidence.
         
@@ -388,7 +454,7 @@ class March:
         - again: boolean of whether to keep marching the same map
         
         """
-        at_battlefield = self.home_to_battle_select(speed)
+        at_battlefield = self.home_to_battle_select()
         if not at_battlefield:
             print("Didn't ends up at battlefield")
             return False
@@ -399,7 +465,7 @@ class March:
         #the l3 click position is the safe default click(only when in battle)
         clicked = self.click3()
         while clicked:
-            time.sleep(speed)
+            time.sleep(self.sleep)
             screenshot= capture_screenshot()
             matched, confidence = self.match_scene(screenshot, self.scene_path['battle_set_out'], threshold=0.8)
             if matched:
@@ -407,7 +473,7 @@ class March:
         #5. from battle_set_out click march_now
         clicked = self.clickButton('battle_set_out','march_now')
         while clicked:
-            time.sleep(speed)
+            time.sleep(self.speed)
             screenshot= capture_screenshot()
             
             matched, confidence = self.match_scene(screenshot, self.scene_path['severe_injure_warning1'], threshold=0.7)
@@ -419,7 +485,7 @@ class March:
                     #5-1. from possible severe_injure_warning1, click no
                     clicked = self.clickButton('severe_injure_warning1','no')
                     while clicked:
-                        time.sleep(speed)
+                        time.sleep(self.speed)
                         screenshot= capture_screenshot()
                         
                         matched, confidence = self.match_scene(screenshot, self.scene_path['battle_set_out'], threshold=0.7)
@@ -427,7 +493,7 @@ class March:
                             break
                     clicked = self.clickButton('battle_set_out','home_button')
                     while clicked:
-                        time.sleep(speed)
+                        time.sleep(self.speed)
                         screenshot= capture_screenshot()
                         
                         matched, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.7)
@@ -445,7 +511,7 @@ class March:
         
         while True:
             self.click_random()
-            time.sleep(speed)
+            time.sleep(self.speed)
             screenshot= capture_screenshot()
             matched, confidence = self.match_scene(screenshot, self.scene_path["next_step"], threshold=0.7)
             if matched:
@@ -454,13 +520,13 @@ class March:
                 if stop_before_boss:
                     found_stop, _ =check_end_pt(screenshot, self.map_targets[map_name],threshold=0.78)
                     if found_stop:
-                        at_home = self.go_home(speed)
+                        at_home = self.go_home()
                         if at_home:
                             print("Successfully runned once, keep going.")
                             return True
                     #not at stop yet
                     clicked = self.clickButton('next_step','keep_on')
-                    injury = self.injury_check_in_battle(speed)
+                    injury = self.injury_check_in_battle()
                     if injury:
                         print('Someone severely injured, stop.')
                         return False
@@ -468,7 +534,7 @@ class March:
                     #no need to stop before boss
                     clicked = self.clickButton('next_step','keep_on')
                     #8. check severe_injure warning 1&2
-                    injury = self.injury_check_in_battle(speed)
+                    injury = self.injury_check_in_battle()
                     if injury:
                         print('Someone severely injured, stop.')
                         return False
