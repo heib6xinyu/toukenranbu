@@ -112,15 +112,15 @@ march.march("5_4",False,False,1)
 #%%
 button_targets['speed_up'].get_num('repair')
 # %%
-march.clickButton('repair','speed_up_grey',0,0.8)
+march.clickButton('repair','speed_up',1,0.8)
 # %%
 _, coord = crop_from_screenshot()
 # %%
 counter = 0
 while True:
-    march.march_udg(99)
+    march.march_udg(88)
     counter += 1
-    print(f"repaired {counter} times.")
+    print(f"Run {counter} times.")
     march.check_state_reconnect()#TODO: arrangement just for now.
     # Break the loop if "q" key is pressed
     if keyboard.is_pressed("z"):
@@ -130,3 +130,4 @@ while True:
 screenshot= capture_screenshot()
 
 scene_now, confidence = find_best_match_in_scene(screenshot, scene_path, threshold=0.6)
+# %%

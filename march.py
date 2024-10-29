@@ -161,22 +161,14 @@ class March:
 
     def go_home(self):
         clicked = self.clickButton('next_step','return_base')
-        while clicked:
-            time.sleep(self.speed)
-            screenshot= capture_screenshot()
-            
-            matched, confidence = self.match_scene(screenshot, self.scene_path['go_home'], threshold=0.7)
-            if matched:
-                break
+        at_scene = self.wait_for_scene('go_home',0.7)
+        if not at_scene:
+            return False            
         #6-2. click yes
         clicked = self.clickButton('go_home','yes')
-        while clicked:
-            time.sleep(self.speed)
-            screenshot= capture_screenshot()
-            
-            matched, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.7)
-            if matched:
-                break
+        at_scene = self.wait_for_scene('home',0.7)
+        if not at_scene:
+            return False  
         return True
     
     def home_to_battle_select(self):
@@ -187,20 +179,14 @@ class March:
             return False
         #1. from home click march button
         clicked = self.clickButton('home','march_button')
-        while clicked:
-            time.sleep(self.speed)
-            screenshot= capture_screenshot()
-            matched, confidence = self.match_scene(screenshot, self.scene_path['march_page'], threshold=0.6)
-            if matched:
-                break
+        at_scene = self.wait_for_scene('march_page')
+        if not at_scene:
+            return False
         #2. from march_page click march image
         clicked = self.clickButton('march_page','march_image')
-        while clicked:
-            time.sleep(self.speed)
-            screenshot= capture_screenshot()
-            matched, confidence = self.match_scene(screenshot, self.scene_path['battlefield_select'], threshold=0.6)
-            if matched:
-                break
+        at_scene = self.wait_for_scene('battlefield_select')
+        if not at_scene:
+            return False
         return True
     
     def use_speed_up_tool(self):
@@ -235,28 +221,15 @@ class March:
             print("Repair task, not at home.")
             return False
         clicked = self.clickButton('home','repair_button')
-        while clicked:
-            time.sleep(self.speed)
-            screenshot= capture_screenshot()
-            
-            matched, confidence = self.match_scene(screenshot, self.scene_path['repair'], threshold=0.6)
-            if matched:
-                break
+        at_scene =self.wait_for_scene('repair')
+        if not at_scene:
+            return False
         self.click_x_y(752,285)#first repair slot
-        while True:
-            time.sleep(self.speed)
-            screenshot= capture_screenshot()
-            matched, confidence = self.match_scene(screenshot, self.scene_path['repair_select'], threshold=0.6)
-            if matched:
-                break
+        at_scene= self.wait_for_scene('repair_select')
+        if not at_scene:
+            return False
         clicked = self.clickButton("repair_select","filter_order")
-        while clicked:
-            time.sleep(self.speed)
-            screenshot= capture_screenshot()
-            
-            matched, confidence = self.match_scene(screenshot, self.scene_path['repair_select_option'], threshold=0.6)
-            if matched:
-                break
+        at_scene = self.wait_for_scene('repair_select_option')
         self.click_x_y(807,305)
         time.sleep(1)
         #self.click_x_y(807,837)
@@ -266,6 +239,7 @@ class March:
         self.click_x_y(1436,837)
         screenshot= capture_screenshot()
         matched, confidence = self.match_scene(screenshot, self.scene_path['no_repair_need'], threshold=0.6)
+        start_time = time.time()
         while not matched:
             self.click_x_y(921,233)
             time.sleep(1)
@@ -278,6 +252,10 @@ class March:
             self.click_x_y(752,285)#first repair slot
             screenshot= capture_screenshot()
             matched, confidence = self.match_scene(screenshot, self.scene_path['no_repair_need'], threshold=0.6)
+            elapsed_time = time.time() - start_time
+            if elapsed_time>self.timeout:
+                print(f'Repair timeout.')
+                return False
         print("Repair task, finished repair.")
         #click home button
         self.click_x_y(1816,1033)
@@ -308,7 +286,7 @@ class March:
         
         
 
-    def march_udg(self, level):
+    def march_udg(self, level=99, start = 99):
         """
         The march method for underground activity.
         
@@ -326,27 +304,41 @@ class March:
             8. if see home and severe_injure_warning1, exit loop
         9. repair all mid injure&severe injure 极短
         """
-        self.repair("duandao", True, "m")
+        def go_to_level(level, start=99):
+            """
+            Helper method to go to desired level from start level
+            Assume start at level 99 and go back if not specific instruction
+            """
+            modnum = start%level
+            gewei = modnum%10
+            shiwei = int(modnum/10)
+            for _ in range(gewei):
+                #个位数降i
+                self.click_x_y(1000,770)#down arrow
+                time.sleep(1)
+            for _ in range(shiwei):
+                self.click_x_y(850,770)#down arrow
+                time.sleep(1)
+
+        repair_success = self.repair("duandao", True, "m")
+        if not repair_success:
+            print('Repair task failed.')
+            return False
         time.sleep(self.speed)
         at_battlefield = self.home_to_battle_select()
         if not at_battlefield:
             print("Didn't ends up at battlefield_select")
             return False
         clicked = self.clickButton("battlefield_select","underground")
-        while clicked:
-            time.sleep(self.speed)
-            screenshot= capture_screenshot()
-            matched, confidence = self.match_scene(screenshot, self.scene_path['underground_scene'], threshold=0.6)
-            if matched:
-                break
-        self.click_x_y(1418,919)
+        at_scene = self.wait_for_scene('underground_scene')
+        if not at_scene:
+            return False
         
-        while True:
-            time.sleep(self.speed)
-            screenshot= capture_screenshot()
-            matched, confidence = self.match_scene(screenshot, self.scene_path['battle_set_out'], threshold=0.6)
-            if matched:
-                break
+        #go to level
+        go_to_level(level, start)
+
+        self.click_x_y(1418,919)
+        at_scene = self.wait_for_scene('battle_set_out',0.6)
         time.sleep(1)
         self.click_x_y(1418,919)#set out now
         time.sleep(1)
@@ -356,7 +348,7 @@ class March:
         matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
         matched_injure, confidence = self.match_scene(screenshot, self.scene_path['severe_injure_warning1'], threshold=0.7)
         while not matched_home and not matched_injure:
-            self.click_x_y(1185,733)#(1281,659)手动逆行
+            self.click_x_y(1281,659)#(1281,659)手动逆行(1185,733)普通
             time.sleep(2)
             screenshot= capture_screenshot()
             matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
@@ -378,21 +370,30 @@ class March:
 
         So far it's go home and restart.
         """
-        click_home_botton = ["underground_march_confirm","add_teammate","battle_set_out","battlefield_select","char_select","healing_team","march_page","no_repair_need","repair","repair_select","team_select", "underground_select"]
+        click_home_botton = ["underground_march_confirm","add_teammate","battle_set_out","battlefield_select","char_select","healing_team","march_page","no_repair_need","repair","repair_select","team_select", "underground_scene","underground_select"]
         screenshot= capture_screenshot()
         scene_now, confidence = find_best_match_in_scene(screenshot, self.scene_path, threshold=0.6)
         if scene_now == 'next_step': #TODO, implement a way to reconnect to the current task...
             #self.injury_check_in_battle
             at_home = self.go_home()
             if at_home:
-                print("From next_step, Reconnected.")
+                print(f"From {scene_now}, Reconnected.")
                 return True
+            else:
+                print(f"From {scene_now}, Reconnected Failed.")
+                return False
         elif scene_now in click_home_botton:
             self.click_x_y(1814,1024)#home button
             print(f"From {scene_now}, Reconnected.")
             return True
         elif scene_now == 'travel_return':
-            self.wait_for_scene('home',0.7)
+            at_scene = self.wait_for_scene('home',0.7)
+            if at_scene:
+                print(f"From {scene_now}, Reconnected.")
+                return True
+            else:
+                print(f"From {scene_now}, Reconnected Failed.")
+                return False
         elif  scene_now == 'team_in_repair':
             clicked = self.clickButton('team_in_repair','repair_button')
             at_repair = self.wait_for_scene('repair')
@@ -412,9 +413,13 @@ class March:
 
         
         else:
-            self.wait_for_scene('home',0.7)
-            print(f"No preset solution for this scene: {scene_now}")
-            return False
+            at_scene = self.wait_for_scene('home',0.7)
+            if at_scene:
+                print(f"No preset solution for this scene: {scene_now}, return home.")
+                return False
+            else:
+                print(f"No preset solution for this scene: {scene_now}, return home time out.")
+                return False
     
 
 
