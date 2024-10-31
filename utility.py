@@ -65,7 +65,7 @@ def capture_screenshot():
     screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGB2BGR)
     return screenshot
 
-def find_template_in_screenshot(screenshot, template_path,threshold = 0.3):
+def find_template_in_screenshot(screenshot, template_path,threshold = 0.7):
     #Load the template image from the local file system
     template = cv2.imread(template_path, cv2.IMREAD_COLOR)
 
@@ -86,7 +86,7 @@ def find_template_in_screenshot(screenshot, template_path,threshold = 0.3):
     
     # Display the result
     cv2.imshow("Matched Result", resize_image(screenshot))
-    cv2.waitKey(5000)
+    cv2.waitKey(3000)
     cv2.destroyAllWindows()    
     if max_val >= threshold:
         print(f"Match found with confidence: {max_val}")

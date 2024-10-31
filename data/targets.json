@@ -82,6 +82,12 @@
                     "w": 322,
                     "h": 82
                 }
+                ,
+                "confirm_ungroup": {
+                    "coordinates": [[628,674]],
+                    "w": 322,
+                    "h": 82
+                }
             }
     },
     {
@@ -159,9 +165,14 @@
         "scenes":
             {
                 "repair_select": {
-                    "coordinates": [[173, 1010]],
-                    "w": 223,
-                    "h": 47
+                    "coordinates": [[173, 1008]],
+                    "w": 222,
+                    "h": 54
+                },
+                "char_select": {
+                    "coordinates": [[222, 1008]],
+                    "w": 215,
+                    "h": 50
                 }
             }
     },
@@ -347,9 +358,10 @@
         "scenes":
             {
                 "healing_team": {
-                    "coordinates": [[737, 329]],
-                    "w": 325,
-                    "h": 83
+                    "coordinates": [[737, 188],
+                                    [738, 329]],
+                    "w": 323,
+                    "h": 80
                 },
                 "add_teammate": {
                     "coordinates": [[737, 188],
@@ -358,8 +370,85 @@
                                     [738, 608],
                                     [739, 749],
                                     [738, 889]],
-                    "w": 190,
-                    "h": 92
+                    "w": 323,
+                    "h": 80
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "auto_equipt_valid",
+        "scenes":
+            {
+                "equipt_manage": {
+                    "coordinates": [[1328, 107]],
+                    "w": 251,
+                    "h": 53
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "replace",
+        "scenes":
+            {
+                "equipt_manage": {
+                    "coordinates": [[1400, 861]],
+                    "w": 170,
+                    "h": 70
+                }
+            }
+    },
+    
+    {
+        "tar_type": "button",
+        "tar_name": "filtering",
+        "scenes":
+            {
+                "char_select": {
+                    "coordinates": [[222, 1009]],
+                    "w": 220,
+                    "h": 39
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "confirm",
+        "scenes":
+            {
+                "char_select": {
+                    "coordinates": [[1438, 179],
+                                    [1434, 319],
+                                    [1434, 463],
+                                    [1434, 603],
+                                    [1434, 745],
+                                    [1434, 887]],
+                    "w": 128,
+                    "h": 102
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "select",
+        "scenes":
+            {   
+                "healing_team": {
+                    "coordinates": [[1438, 179],
+                                    [1434, 319]],
+                    "w": 128,
+                    "h": 103
+                },
+                "team_select": {
+                    "coordinates": [[1438, 179],
+                                    [1434, 319],
+                                    [1434, 463],
+                                    [1434, 603],
+                                    [1434, 745],
+                                    [1434, 887]],
+                    "w": 128,
+                    "h": 103
                 }
             }
     },
@@ -402,6 +491,57 @@
                     "coordinates": [[1231,888]],
                     "w": 316,
                     "h": 122
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "ungroup",
+        "scenes":
+            {
+                "team_select": {
+                    "coordinates": [[1189, 1009]],
+                    "w": 188,
+                    "h": 39
+                }
+            }
+    }
+    ,
+    {
+        "tar_type": "button",
+        "tar_name": "team_button",
+        "scenes":
+            {
+                "home": {
+                    "coordinates": [[1726, 207]],
+                    "w": 195,
+                    "h": 94
+                }
+            }
+    }
+    ,
+    {
+        "tar_type": "button",
+        "tar_name": "swipe_right_green",
+        "scenes":
+            {
+                "char_select": {
+                    "coordinates": [[1008, 1015]],
+                    "w": 44,
+                    "h": 44
+                }
+            }
+    }
+    ,
+    {
+        "tar_type": "button",
+        "tar_name": "swipe_right_grey",
+        "scenes":
+            {
+                "char_select": {
+                    "coordinates": [[1008, 1015]],
+                    "w": 44,
+                    "h": 44
                 }
             }
     }

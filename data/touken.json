@@ -1,0 +1,17 @@
+[
+    {
+        "name": "baishanjiguang",
+        "touken_type": "jian",
+        "ji": 0,
+        "coordinates":
+            {
+                "char_select": {
+                    "coordinates": [[235, 172],
+                                    [235, 313]
+                                    ],
+                    "w": 374,
+                    "h": 97
+                }
+            }
+    }
+]
