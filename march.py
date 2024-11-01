@@ -22,7 +22,7 @@ class CharNotFoundError(Exception):
         super().__init__(f"{message} in state {self.state} in march {self.march_name}")
                       
 class March:
-    def __init__(self, team, scene_path, battlefield_path, button_path, status_path, button_targets, map_targets, timeout = 30, speed = 3):
+    def __init__(self, team, scene_path, battlefield_path, button_path, status_path, button_targets, map_targets, touken_targets, timeout = 30, speed = 3):
         self.team = team
         self.scene_path = scene_path  # Dictionary of path to scenes
         self.battlefield_path = battlefield_path  # Dictionary of path to battlefields
@@ -30,6 +30,7 @@ class March:
         self.status_path = status_path  # Dictionary of path to status
         self.button_targets = button_targets #dimension info for buttons
         self.map_targets = map_targets #dimension info for maps
+        self.touken_targets = touken_targets
         self.march_name = None
         self.state = None
         self.timeout = timeout
@@ -66,27 +67,15 @@ class March:
         adb_swipe(995, 562, 349, 562, 50)
         return True
 
-    def select_char(self, who, healing):
-        screenshot = capture_screenshot()
-        matched, _ = self.match_scene(screenshot,self.scene_path['home'],threshold=0.8)
-        
-        if matched:
-            #1. from home click team button
-            clicked = self.clickButton('home','team_button')
-            if clicked:
 
-                clicked = self.clickButton('healing_team',)
-            else:
-                print('Team_button not found.')
-                return False
-        else:
-            print('Not Starting at home')
-            return False
 
         
     def clickButton(self, start_scene, button, end_scene, num = 0, threshold=0.5):
-        self.wait_for_scene(start_scene, threshold) 
+        time.sleep(self.speed)
         screenshot= capture_screenshot()
+        # matched, confidence = self.match_scene(screenshot, self.scene_path[start_scene], threshold)
+        # if not matched:
+        #     raise SceneTimeoutError(self.state, self.march_name, f"clicking {button} but not at {start_scene}.")
         wanted_button = check_area(screenshot, self.button_targets[button], start_scene, num, threshold)
         if wanted_button:
             #at start scene found wanted button
@@ -99,7 +88,7 @@ class March:
             middle_y = h // 2
             
             adb_tap(x+middle_x, y+middle_y)
-            self.wait_for_scene(end_scene, threshold) 
+            self.wait_for_scene(end_scene,threshold) 
         else:
             raise ButtonNotFoundError(self.state, self.march_name, f'Not wanted button {button} at {start_scene}')
             
@@ -216,6 +205,7 @@ class March:
         Helper function to get the desire touken from char_select scene
         return the index of confirm button's coordinates
         """
+        self.state = f"Search_char {touken}"
         target_path = os.path.join('data', 'screenshot', 'touken', f'{touken}.png')
         top_left = None
         # TODO if other button needed, change this hard code part
@@ -233,7 +223,9 @@ class March:
             at_end = check_area(screenshot_image, self.button_targets['swipe_right_grey'], 'char_select', threshold=0.6)
             if at_end:
                 raise CharNotFoundError(self.state, self.march_name, f"{touken} not found")
-        
+
+
+
     def filter_touken(self, touken_target):
         """
         Helper function to filter for desire touken's type
@@ -241,30 +233,58 @@ class March:
         Parameter:
         -touken_target: the touken to select
 
-        """
-        try:
-            
-            self.wait_for_scene('char_select')
-            screenshot= capture_screenshot()
-            filter = check_area(screenshot,self.button_targets['filter_order'], 'char_select', threshold=0.7)
-            #filtering = check_area(screenshot,self.button_targets['filtering'], 'char_select', threshold=0.7)
-            if filter:
-                #haven't put in any filter
-                touken_type = touken_target.get_touken_type()
-                ji = touken_target.get_ji()#TODO may not need this just yet
-                self.clickButton('char_select', 'filter_order','filter_all', threshold=0.7)
-                self.clickButton('filter_all', touken_type, 'filter_sword')#TODO issue here
-                self.clickButton('filter_sword', 'confrim', 'char_select')
+        """ 
+        self.state = "Filter_touken"
+        self.wait_for_scene('char_select')
+        screenshot= capture_screenshot()
+        filter = check_area(screenshot,self.button_targets['filter_order'], 'char_select', threshold=0.5)
+        filtering = check_area(screenshot,self.button_targets['filtering'], 'char_select', threshold=0.5)
+        touken_type = touken_target.get_touken_type()
+        ji = touken_target.get_ji()
+        if filter:
+            #haven't put in any filter
+            self.clickButton('char_select', 'filter_order','filter_all', threshold=0.5)
+        elif filtering:
+            self.clickButton('char_select', 'filtering','filter_all', threshold=0.5)
+        match touken_type:
+            case 'duandao':
+                self.click_x_y(781,316)
+            case 'jian':
+                self.click_x_y(1096,525)
+            case 'taidao':
+                self.click_x_y(792,422)
+            case _:
+                print(f'No matched type {touken_type}.')
+        if ji:
+            self.click_x_y(792,734)
+        else:
+            self.click_x_y(484,372)
+        self.clickButton('filter_all', 'filter_confirm', 'char_select')
 
 
 
+    def healing_march(self):
+        self.clickButton('healing_team','march_button','march_page')
+        self.clickButton('march_page','march_image','battlefield_select')
+        self.click1()
+        self.clickButton('battle_set_out','march_now','severe_injure_warning1')
+        #so far hard code the confirm set out because scene matching is time consuming
+        self.click_x_y(792,710)
+        time.sleep(self.speed)
+        self.click_x_y(792,710)
+        self.wait_for_scene("1-1")
+        #assume in battlefield
+        screenshot = capture_screenshot()
+        matched, confidence = self.match_scene(screenshot, self.scene_path["home"], threshold=0.7)  
+        while not matched:
+            time.sleep(self.speed)
+            self.click_x_y(1199,728)#continue marching
+            screenshot = capture_screenshot()
+            matched, confidence = self.match_scene(screenshot, self.scene_path["home"], threshold=0.7)  
+        return True
 
-        except SceneTimeoutError as e:
-            logging.error(str(e))
-            print("Error:", e)
-        except ButtonNotFoundError as e:
-            logging.error(str(e))
-            print("Error:", e)
+
+        
 
     def healing(self, touken):
         """
@@ -274,27 +294,29 @@ class March:
         -touken :who to heal
 
         """
-        try:
-            self.wait_for_scene('home')
-            self.clickButton('home','team_button','team_select')
-            self.clickButton('team_select','ungroup','confirm_ungroup')
-            self.clickButton('confirm_ungroup','yes','team_select',threshold=0.6)
+        self.state = f'healing {touken}'
+        self.wait_for_scene('home')
+        self.clickButton('home','team_button','team_select')
+        self.clickButton('team_select','ungroup','confirm_ungroup')
+        self.clickButton('confirm_ungroup','yes','team_select',threshold=0.6)
+            
+        found = None
+        found = self.search_char('baishanjiguang')
+        if found is None: #no baishanjiguang in team
             self.clickButton('healing_team','select','equipt_manage')
             self.clickButton('equipt_manage','replace','char_select')
+            #self.filter_touken(self.touken_targets['baishanjiguang'])#pass baishanjiguang target
+            #TODO: when the selected target has very few number, the char_select may not be able to recognize it.
             confirm_num = self.search_char('baishanjiguang')
             self.clickButton('char_select','confirm','healing_team',confirm_num)
-            self.clickButton('healing_team','add_char','char_select', 1)
-            confirm_num = self.search_char(touken)
+        self.clickButton('healing_team','add_char','char_select', 1)
 
-        except SceneTimeoutError as e:
-            logging.error(str(e))
-            print("Error:", e)
-        except ButtonNotFoundError as e:
-            logging.error(str(e))
-            print("Error:", e)
-        except CharNotFoundError as e:
-            logging.error(str(e))
-            print("Error:", e)
+        self.filter_touken(self.touken_targets[touken])#pass touken's target
+        confirm_num = self.search_char(touken)
+        self.clickButton('char_select','confirm','healing_team',confirm_num)
+        self.healing_march()
+
+        
 
     def repair(self, type, ji, injury_level):
         """

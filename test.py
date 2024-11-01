@@ -38,8 +38,7 @@ battlefield_path = load_targets(battlefield_directory)
 march = March(1,scene_path,battlefield_path,button_path,status_path,button_targets,map_targets)
 
 
-# %%
-_, coord = crop_from_screenshot()
+
 # %%
 counter = 0
 while True:
@@ -53,6 +52,8 @@ while True:
         break
 # %%
 counter
+# %%
+_, coord = crop_from_screenshot()
 # %%
 screenshot= capture_screenshot()
 
