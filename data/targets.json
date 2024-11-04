@@ -213,6 +213,42 @@
     },
     {
         "tar_type": "button",
+        "tar_name": "record_team",
+        "scenes":
+            {
+                "team_select": {
+                    "coordinates": [[414, 1005]],
+                    "w": 195,
+                    "h": 55
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "baishan",
+        "scenes":
+            {
+                "healing_team": {
+                    "coordinates": [[230, 172]],
+                    "w": 380,
+                    "h": 96
+                }
+            }
+    },
+    {
+        "tar_type": "button",
+        "tar_name": "edit_team",
+        "scenes":
+            {
+                "pre_select_team": {
+                    "coordinates": [[615, 936]],
+                    "w": 315,
+                    "h": 78
+                }
+            }
+    },
+    {
+        "tar_type": "button",
         "tar_name": "ji",
         "scenes":
             {
@@ -433,7 +469,8 @@
         "scenes":
             {
                 "char_select": {
-                    "coordinates": [[1008, 1015]],
+                    "coordinates": [[1008, 1015],
+                                    [926,1015]],
                     "w": 44,
                     "h": 44
                 }
@@ -446,7 +483,8 @@
         "scenes":
             {
                 "char_select": {
-                    "coordinates": [[1008, 1015]],
+                    "coordinates": [[1008, 1015],
+                                    [926,1015]],
                     "w": 44,
                     "h": 44
                 }

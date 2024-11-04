@@ -22,12 +22,13 @@ class CharNotFoundError(Exception):
         super().__init__(f"{message} in state {self.state} in march {self.march_name}")
                       
 class March:
-    def __init__(self, team, scene_path, battlefield_path, button_path, status_path, button_targets, map_targets, touken_targets, timeout = 30, speed = 3):
+    def __init__(self, team, scene_path, battlefield_path, button_path, status_path, touken_path,button_targets, map_targets, touken_targets, timeout = 30, speed = 3):
         self.team = team
         self.scene_path = scene_path  # Dictionary of path to scenes
         self.battlefield_path = battlefield_path  # Dictionary of path to battlefields
         self.button_path = button_path  # Dictionary of path to buttons
         self.status_path = status_path  # Dictionary of path to status
+        self.touken_path = touken_path
         self.button_targets = button_targets #dimension info for buttons
         self.map_targets = map_targets #dimension info for maps
         self.touken_targets = touken_targets
@@ -66,32 +67,28 @@ class March:
     def swipe_to_left_s(self):
         adb_swipe(995, 562, 349, 562, 50)
         return True
+    def swipe_to_right_m(self):
+        adb_swipe(618, 562, 1251, 562, 50)
+        return True
+    def swipe_to_left_m(self):
+        adb_swipe(1251, 562, 618, 562, 50)
+        return True
 
 
 
         
     def clickButton(self, start_scene, button, end_scene, num = 0, threshold=0.5):
-        time.sleep(self.speed)
-        screenshot= capture_screenshot()
-        # matched, confidence = self.match_scene(screenshot, self.scene_path[start_scene], threshold)
-        # if not matched:
-        #     raise SceneTimeoutError(self.state, self.march_name, f"clicking {button} but not at {start_scene}.")
-        wanted_button = check_area(screenshot, self.button_targets[button], start_scene, num, threshold)
-        if wanted_button:
-            #at start scene found wanted button
-            coords = self.button_targets[button].get_coordinates(start_scene)
-            x,y = coords['coordinates'][num]
-            
-            w = coords['w']
-            h = coords['h']
-            middle_x = w // 2
-            middle_y = h // 2
-            
-            adb_tap(x+middle_x, y+middle_y)
-            self.wait_for_scene(end_scene,threshold) 
-        else:
-            raise ButtonNotFoundError(self.state, self.march_name, f'Not wanted button {button} at {start_scene}')
-            
+        coords = self.button_targets[button].get_coordinates(start_scene)
+        x,y = coords['coordinates'][num]
+        
+        w = coords['w']
+        h = coords['h']
+        middle_x = w // 2
+        middle_y = h // 2
+        
+        adb_tap(x+middle_x, y+middle_y)
+        self.wait_for_scene(end_scene,threshold) 
+        
         
 
     def match_scene(self, screenshot, scene_template, threshold=0.8):
@@ -200,47 +197,74 @@ class March:
         #TODO rethink whether this is necessary
         pass
     
-    def search_char(self, touken):
+    def search_char(self, path, threshold=0.6):
         """
-        Helper function to get the desire touken from char_select scene
+        Helper function to get the desire target defined by path from char_select scene
         return the index of confirm button's coordinates
         """
-        self.state = f"Search_char {touken}"
-        target_path = os.path.join('data', 'screenshot', 'touken', f'{touken}.png')
+        self.state = f"Search_char {path}"
+        
         top_left = None
         # TODO if other button needed, change this hard code part
         coordinates = self.button_targets['confirm'].get_coordinates('char_select')['coordinates']
+        start_time = time.time()
         while top_left is None:
             screenshot_image = capture_screenshot()
             # Display the screenshot (optional)
-            top_left, width, height = find_template_in_screenshot(screenshot_image, target_path, threshold=0.7)
+            top_left, width, height, num_injure = find_template_in_screenshot(screenshot_image, path, threshold)
             if top_left:
                 (_,top_left_y)  = top_left
                 closest_index = min(range(len(coordinates)), key=lambda i: abs(coordinates[i][1] - top_left_y))
                 return closest_index
             self.swipe_to_left_l()
             time.sleep(3)
-            at_end = check_area(screenshot_image, self.button_targets['swipe_right_grey'], 'char_select', threshold=0.6)
-            if at_end:
-                raise CharNotFoundError(self.state, self.march_name, f"{touken} not found")
+            # at_end = check_area(screenshot_image, self.button_targets['swipe_right_grey'], 'char_select', threshold=0.6)
+            # if at_end:
+            #     raise CharNotFoundError(self.state, self.march_name, f"Reach end, {path} not found")
+            if time.time()-start_time > 30:#check for end is too difficult, use time out instead
+                print(f"Timeout, {path} not found.")
+                return None
+
+    def search_injured_char(self, threshold=0.6):
+        """
+        Helper function to get the desire target defined by path from char_select scene
+        return the index of confirm button's coordinates
+        """
+        self.state = f"search_injured_char"
+        
+        found = False
+        start_time = time.time()
+        while not found:
+            screenshot_image = capture_screenshot()
+            # Display the screenshot (optional)
+            found, num = check_area(screenshot_image, self.button_targets['severe_injure'],'char_select', threshold=threshold)
+            if found:
+                return num
+            self.swipe_to_left_l()
+            time.sleep(3)
+            # at_end = check_area(screenshot_image, self.button_targets['swipe_right_grey'], 'char_select', threshold=0.6)
+            # if at_end:
+            #     raise CharNotFoundError(self.state, self.march_name, f"Reach end, {path} not found")
+            if time.time()-start_time > 30:#check for end is too difficult, use time out instead
+                print(f"Timeout, severe_injure not found.")
+                return None    
 
 
-
-    def filter_touken(self, touken_target):
+    def filter_touken(self, touken_type, ji):
         """
         Helper function to filter for desire touken's type
         
         Parameter:
-        -touken_target: the touken to select
+        -touken_type:
+        -ji: what to filter
 
         """ 
         self.state = "Filter_touken"
         self.wait_for_scene('char_select')
         screenshot= capture_screenshot()
-        filter = check_area(screenshot,self.button_targets['filter_order'], 'char_select', threshold=0.5)
-        filtering = check_area(screenshot,self.button_targets['filtering'], 'char_select', threshold=0.5)
-        touken_type = touken_target.get_touken_type()
-        ji = touken_target.get_ji()
+        filter,_ = check_area(screenshot,self.button_targets['filter_order'], 'char_select', threshold=0.5)
+        filtering,_ = check_area(screenshot,self.button_targets['filtering'], 'char_select', threshold=0.5)
+        
         if filter:
             #haven't put in any filter
             self.clickButton('char_select', 'filter_order','filter_all', threshold=0.5)
@@ -267,6 +291,7 @@ class March:
         self.clickButton('healing_team','march_button','march_page')
         self.clickButton('march_page','march_image','battlefield_select')
         self.click1()
+        self.wait_for_scene('battle_set_out')
         self.clickButton('battle_set_out','march_now','severe_injure_warning1')
         #so far hard code the confirm set out because scene matching is time consuming
         self.click_x_y(792,710)
@@ -286,37 +311,59 @@ class March:
 
         
 
-    def healing(self, touken):
+    def healing(self, touken_type, touken_ji):
         """
-        Function to use baishan to heal touken
+        Function to use baishan to heal severe injured touken type
 
         Paramater: 
-        -touken :who to heal
+        -touken_type:
+        -touken_ji: status to filter the touken_with
 
         """
-        self.state = f'healing {touken}'
-        self.wait_for_scene('home')
-        self.clickButton('home','team_button','team_select')
+        self.state = f'healing {touken_type}, {touken_ji}'
+        
         self.clickButton('team_select','ungroup','confirm_ungroup')
         self.clickButton('confirm_ungroup','yes','team_select',threshold=0.6)
             
-        found = None
-        found = self.search_char('baishanjiguang')
-        if found is None: #no baishanjiguang in team
+        screenshot = capture_screenshot()
+        found,_ = check_area(screenshot,self.button_targets['baishan'], 'healing_team', threshold=0.5)
+        
+        if not found: #no baishanjiguang in team
             self.clickButton('healing_team','select','equipt_manage')
             self.clickButton('equipt_manage','replace','char_select')
             #self.filter_touken(self.touken_targets['baishanjiguang'])#pass baishanjiguang target
             #TODO: when the selected target has very few number, the char_select may not be able to recognize it.
-            confirm_num = self.search_char('baishanjiguang')
+            confirm_num = self.search_char(self.touken_path['baishanjiguang'])
             self.clickButton('char_select','confirm','healing_team',confirm_num)
         self.clickButton('healing_team','add_char','char_select', 1)
 
-        self.filter_touken(self.touken_targets[touken])#pass touken's target
-        confirm_num = self.search_char(touken)
-        self.clickButton('char_select','confirm','healing_team',confirm_num)
-        self.healing_march()
-
+        self.filter_touken(touken_type,touken_ji)#pass touken's target
         
+        confirm_num = self.search_injured_char(0.6)
+        if confirm_num is None:
+            # will be in char_select
+            print('No injured touken.')
+            self.click_x_y(1836,1022)#本丸
+            self.wait_for_scene('home')
+            return False
+        self.clickButton('char_select','confirm','healing_team',confirm_num)
+        self.clickButton('healing_team','select','equipt_manage',1)
+        self.clickButton('equipt_manage', 'auto_equipt_valid','finished_auto_equipt')#TODO: if no equiptment, build equuipment
+        self.click_x_y(974,713)#yes
+        self.wait_for_scene('equipt_manage')
+        self.healing_march()
+        return True
+
+    def select_predefine_team(self,team_num = 0):
+        self.wait_for_scene('team_select', 0.6)
+        self.clickButton('team_select','record_team','pre_select_team')
+        for _ in range(team_num):
+            self.swipe_to_left_m()
+        self.click_x_y(768,972)#编入部队
+        self.wait_for_scene('confirm_team')
+        self.click_x_y(752,988)#是
+        self.wait_for_scene('team_select')
+        return True
 
     def repair(self, type, ji, injury_level):
         """
@@ -381,7 +428,7 @@ class March:
         return True
 
 
-    def equipt(self, team_num = 1):
+    def equipt(self, team_num = 1,threshold = 0.7):
         """
         Helper method to replace equiptment
 
@@ -393,24 +440,29 @@ class March:
         2. from team select, from top to bottom, click select, automatic equipt, confirm
         3. return home
         """   
-        screenshot= capture_screenshot()
-        at_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
-        if not at_home:
-            print("Task put equiptment. Not starting at home.")
-            return False
-        clicked = self.clickButton("home","team_button")
-        at_correct_scene = self.wait_for_scene('team_select',0.7)
-        if not at_correct_scene:
-            return False
+        self.wait_for_scene("team_select",threshold)
+        for i in range(6):
+            self.clickButton('team_select','select','equipt_manage',i,threshold)
+            self.clickButton('equipt_manage', 'auto_equipt_valid','finished_auto_equipt', threshold=threshold)#TODO: if no equiptment, build equuipment
+            self.click_x_y(974,713)#yes
+            self.wait_for_scene('equipt_manage',threshold)
+            self.click_x_y(915,138)#return
+            self.wait_for_scene('team_select',threshold)
+
+        return True
         
         
 
-    def march_udg(self, level=99, start = 99):
+    def march_udg(self, level=99, start = 99, team = 0):
         """
         The march method for underground activity.
         
         Parameters:
         -level: which level to go
+        -level: start level (your highest level now)
+        -team: which preset team to select
+            so far, team 0 is 极太一队
+                    team 1 is 极短二队#TODO come up with a way to modify this
 
         Cycle:
         1. from home click march button
@@ -421,7 +473,7 @@ class March:
         6. from underground_march_confirm click yes(780,567)
         --repeat 7. click keep_on(1242,659)/find the reverse format until stopping criteria--
             8. if see home and severe_injure_warning1, exit loop
-        9. repair all mid injure&severe injure 极短
+        9. repair all mid injure&severe injure 极短 /or baishan heal
         """
         def go_to_level(level, start=99):
             """
@@ -438,13 +490,48 @@ class March:
             for _ in range(shiwei):
                 self.click_x_y(850,770)#down arrow
                 time.sleep(1)
-        try:
-            repair_success = self.repair("duandao", True, "m")
-        except Exception  as e:
-            logging.error(str(e))
-            print("Error:", e)
-            print('Repair task failed.')
-            return False
+        if team ==0:
+            #极太队，白山治疗
+            try:
+                self.wait_for_scene('home')
+                self.clickButton('home','team_button','team_select')
+                screenshot= capture_screenshot()
+                path = self.status_path['severe_injure']
+                top_left, width, height,num_injure = find_template_in_screenshot(screenshot, path, threshold=0.60)
+                if top_left:
+                    #there is severe injury, heal all of them
+                    for i in range((max(num_injure,6))):
+                        
+                        more_injure = self.healing('taidao',True)
+                        if not more_injure: #should be at home
+                            break
+                        self.clickButton('home','team_button','healing_team')
+
+
+                else:
+                    #no one injured.
+                    #click home
+                    self.click_x_y(1804,1038)
+                    self.wait_for_scene('home')
+                #after healing, most likely will be at home
+                self.clickButton('home','team_button','team_select',threshold=0.5)
+                self.select_predefine_team()
+                #click home
+                self.click_x_y(1804,1038)
+            except Exception  as e:
+                logging.error(str(e))
+                print("Error:", e)
+                print('Baishan Heal task failed.')
+                return False   
+        elif team ==1:
+            #极短队，直接治疗
+            try:
+                repair_success = self.repair("duandao", True, "m")
+            except Exception  as e:
+                logging.error(str(e))
+                print("Error:", e)
+                print('Repair task failed.')
+                return False
         try:
             time.sleep(self.speed)
             at_battlefield = self.home_to_battle_select()
@@ -462,6 +549,7 @@ class March:
             self.click_x_y(1418,919)
             at_scene = self.wait_for_scene('battle_set_out',0.6)
             self.click_x_y(1418,919)#set out now
+            
             at_scene = self.wait_for_scene('underground_march_confirm')
             self.click_x_y(780,567)#if not severe injured, click yes and set out.
             screenshot= capture_screenshot()
@@ -536,7 +624,17 @@ class March:
                 time.sleep(4) #wait for animation 
             print('Speeded up all repair.')
             return True
-        
+        elif scene_now == 'need_equipt':
+            self.click_x_y(761,706)#整备刀装
+            self.equipt()
+            print('Need equpit, reconnect.')
+        elif scene_now == 'severe_injure_warning1':
+            self.click_x_y(1130,717)#否
+            self.wait_for_scene('battle_set_out')
+            self.click_x_y(1818,1027)#本丸
+            self.wait_for_scene('home')
+            print('Severe injure warning from battle set out, reconnect.')
+
         else:
             at_scene = self.wait_for_scene('home',0.7)
 

@@ -76,6 +76,11 @@ def find_template_in_screenshot(screenshot, template_path,threshold = 0.7):
     
     # Get the best match position
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+    thresholded_locations = np.where(result >= threshold)
+
+    # Count of all regions that meet or exceed the threshold
+    num_regions_above_threshold = len(thresholded_locations[0])
+
     # Define the rectangle's bottom-right corner based on the template size
     h, w = template.shape[:2]
     top_left = max_loc
@@ -89,12 +94,12 @@ def find_template_in_screenshot(screenshot, template_path,threshold = 0.7):
     cv2.waitKey(3000)
     cv2.destroyAllWindows()    
     if max_val >= threshold:
-        print(f"Match found with confidence: {max_val}")
-        return top_left, w, h
+        print(f"Match found with confidence: {max_val},there are {num_regions_above_threshold}")
+        return top_left, w, h,num_regions_above_threshold
     else:
         print('No good enough match.')
         print(f"Best confidence: {max_val}")
-        return None, None, None
+        return None, None, None, None
 
 def find_best_match_in_scene(screenshot, targets, threshold=0.8):
     """
@@ -359,13 +364,13 @@ def check_area(screenshot, target, scene, num=0, threshold = 0.8):
         # Set a threshold for a match
         if max_val > threshold:
             print(f"Target found : {max_val}")
-            return True
+            return True, num
         else:
             print(f"No target found, best confidence: {max_val} at ({x},{y})")
-            return False
-        
-    for (x,y) in target_coords['coordinates']:
-        
+            return False, None
+    best_con = 0    
+    for i in range(len(target_coords['coordinates'])):
+        (x,y) = target_coords['coordinates'][i]
         region_of_interest = (x, y, w, h)  # Adjust as necessary
         x, y, w, h = region_of_interest
         cropped_region = screenshot[y:y+h, x:x+w]
@@ -382,10 +387,11 @@ def check_area(screenshot, target, scene, num=0, threshold = 0.8):
         # Set a threshold for a match
         if max_val > threshold:
             print(f"Target found : {max_val}")
-            return True
-        else:
-            print(f"No target found, best confidence: {max_val} at ({x},{y})")
-            return False
+            return True,i
+        if max_val> best_con:
+            best_con = max_val
+    print(f"No target found, best confidence: {best_con} at ({x},{y})")
+    return False,None
         
 
 def check_end_pt(screenshot, map, threshold = 0.8):
