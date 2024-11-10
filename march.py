@@ -658,6 +658,7 @@ class March:
         except SceneTimeoutError as e:
             logging.error(str(e))
             print("Error:", e)
+            screenshot= capture_screenshot()
             matched_special, confidence = self.match_scene(screenshot, self.scene_path['ldz_special'], threshold=0.6)
 
         if not matched_special:
@@ -670,10 +671,11 @@ class March:
         self.click_x_y(925,709)
         self.wait_for_scene('battle_set_out')#TODO: update wait for scene to take in an argument to see where I should click and wait.
         try:
-            self.clickButton('battle_set_out','march_now','ldz_march_confirm')#TODO:could be no pass, update click button to accept cases that have two possible outcome
+            self.clickButton('battle_set_out','march_now','ldz_march_confirm',threshold=0.8)#TODO:could be no pass, update click button to accept cases that have two possible outcome
         except SceneTimeoutError as e:
             logging.error(str(e))
             print("Error:", e)
+            screenshot= capture_screenshot()
             matched_no_pass, confidence = self.match_scene(screenshot, self.scene_path['ldz_no_pass'], threshold=0.6)
             if matched_no_pass:
                 #run out of pass
@@ -681,9 +683,9 @@ class March:
                 self.wait_for_scene('ldz_buy_pass')
                 self.click_x_y(1255,674)#补充全部
                 time.sleep(2)
-                self.click(968,716)#确定
+                self.click_x_y(968,716)#确定
                 self.wait_for_scene('battle_set_out')
-                self.clickButton('battle_set_out','march_now','ldz_march_confirm')
+                self.clickButton('battle_set_out','march_now','ldz_march_confirm',threshold=0.8)
 
         self.click_x_y(964,884)#确定出阵
         time.sleep(5)
@@ -699,7 +701,7 @@ class March:
         if matched_special:
             self.click_x_y(925,709)
             self.wait_for_scene('battle_set_out')
-            self.clickButton('battle_set_out','march_now','ldz_march_confirm')
+            self.clickButton('battle_set_out','march_now','ldz_march_confirm',threshold=0.8)
             self.click_x_y(964,884)#确定出阵
             screenshot= capture_screenshot()
             matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
