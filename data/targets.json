@@ -64,6 +64,18 @@
     },
     {
         "tar_type": "button",
+        "tar_name": "lianduizhan_sea",
+        "scenes":
+            {
+                "battlefield_select": {
+                    "coordinates": [[736,295]],
+                    "w": 475,
+                    "h": 124
+                }
+            }
+    },
+    {
+        "tar_type": "button",
         "tar_name": "yes",
         "scenes":
             {

@@ -640,7 +640,74 @@ class March:
 
     
 
+    def march_ldz(self):
+        """
+        This is the march function for 联队战， 默认用1队反复刷
 
+        Cycle:
+        1. home to battle select
+        2. if this is the single activity, just click the activity square
+        3. from activity page, click 4
+        4. from battle set out click set out now
+        5. from confirm set out(小判) click confirm 
+        6. continue clicking fight with current team until home 
+        """
+        matched_special= False
+        try:
+            self.home_to_battle_select()
+        except SceneTimeoutError as e:
+            logging.error(str(e))
+            print("Error:", e)
+            matched_special, confidence = self.match_scene(screenshot, self.scene_path['ldz_special'], threshold=0.6)
+
+        if not matched_special:
+            #TODO: implement way to make sure this is the only activity that's on
+            # for now, just click the activity space
+            self.clickButton('battlefield_select','lianduizhan_sea','lianduizhan')
+        else:
+            print('Unexpected scene, end task')
+            return False
+        self.click_x_y(925,709)
+        self.wait_for_scene('battle_set_out')#TODO: update wait for scene to take in an argument to see where I should click and wait.
+        try:
+            self.clickButton('battle_set_out','march_now','ldz_march_confirm')#TODO:could be no pass, update click button to accept cases that have two possible outcome
+        except SceneTimeoutError as e:
+            logging.error(str(e))
+            print("Error:", e)
+            matched_no_pass, confidence = self.match_scene(screenshot, self.scene_path['ldz_no_pass'], threshold=0.6)
+            if matched_no_pass:
+                #run out of pass
+                self.click_x_y(780,658)#补充
+                self.wait_for_scene('ldz_buy_pass')
+                self.click_x_y(1255,674)#补充全部
+                time.sleep(2)
+                self.click(968,716)#确定
+                self.wait_for_scene('battle_set_out')
+                self.clickButton('battle_set_out','march_now','ldz_march_confirm')
+
+        self.click_x_y(964,884)#确定出阵
+        time.sleep(5)
+        screenshot= capture_screenshot()
+        matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
+        matched_special, confidence = self.match_scene(screenshot, self.scene_path['ldz_special'], threshold=0.96)
+        while not matched_home and not matched_special:
+            self.click_x_y(1311,426)
+            time.sleep(1)
+            screenshot= capture_screenshot()
+            matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
+            matched_special, confidence = self.match_scene(screenshot, self.scene_path['ldz_special'], threshold=0.96)
+        if matched_special:
+            self.click_x_y(925,709)
+            self.wait_for_scene('battle_set_out')
+            self.clickButton('battle_set_out','march_now','ldz_march_confirm')
+            self.click_x_y(964,884)#确定出阵
+            screenshot= capture_screenshot()
+            matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
+            while not matched_home:
+                self.click_x_y(1311,426)
+                time.sleep(1)
+                screenshot= capture_screenshot()
+                matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
 
     #try a full cycle
     #1. from home click march button
