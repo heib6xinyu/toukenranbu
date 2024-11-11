@@ -582,7 +582,7 @@ class March:
 
         So far it's go home and restart.
         """
-        click_home_botton = ["underground_march_confirm","add_teammate","battle_set_out","battlefield_select","char_select","healing_team","march_page","no_repair_need","repair","repair_select","team_select", "underground_scene","underground_select"]
+        click_home_botton = ["underground_march_confirm","add_teammate","battle_set_out","battlefield_select","char_select","healing_team","march_page","no_repair_need","repair","repair_select","team_select", "underground_scene","underground_select",'ldz_special','lianduizhan','ldz_buy_pass','ldz_no_pass','ldz_march_confirm']
         screenshot= capture_screenshot()
         scene_now, confidence = find_best_match_in_scene(screenshot, self.scene_path, threshold=0.6)
         if scene_now == 'next_step': #TODO, implement a way to reconnect to the current task...
@@ -634,7 +634,6 @@ class March:
             self.click_x_y(1818,1027)#本丸
             self.wait_for_scene('home')
             print('Severe injure warning from battle set out, reconnect.')
-
         else:
             at_scene = self.wait_for_scene('home',0.7)
 
@@ -654,63 +653,58 @@ class March:
         """
         matched_special= False
         try:
-            self.home_to_battle_select()
-        except SceneTimeoutError as e:
-            logging.error(str(e))
-            print("Error:", e)
             screenshot= capture_screenshot()
+            matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
             matched_special, confidence = self.match_scene(screenshot, self.scene_path['ldz_special'], threshold=0.6)
-
-        if not matched_special:
-            #TODO: implement way to make sure this is the only activity that's on
-            # for now, just click the activity space
-            self.clickButton('battlefield_select','lianduizhan_sea','lianduizhan')
-        else:
-            print('Unexpected scene, end task')
-            return False
-        self.click_x_y(925,709)
-        self.wait_for_scene('battle_set_out')#TODO: update wait for scene to take in an argument to see where I should click and wait.
-        try:
-            self.clickButton('battle_set_out','march_now','ldz_march_confirm',threshold=0.8)#TODO:could be no pass, update click button to accept cases that have two possible outcome
-        except SceneTimeoutError as e:
-            logging.error(str(e))
-            print("Error:", e)
-            screenshot= capture_screenshot()
-            matched_no_pass, confidence = self.match_scene(screenshot, self.scene_path['ldz_no_pass'], threshold=0.6)
-            if matched_no_pass:
-                #run out of pass
-                self.click_x_y(780,658)#补充
-                self.wait_for_scene('ldz_buy_pass')
-                self.click_x_y(1255,674)#补充全部
-                time.sleep(2)
-                self.click_x_y(968,716)#确定
+            if matched_special:
+                #click 4, set out, won't have the case of no pass
+                self.click_x_y(925,709)
                 self.wait_for_scene('battle_set_out')
+                #TODO: update wait for scene to take in an argument to see where I should click and wait.
                 self.clickButton('battle_set_out','march_now','ldz_march_confirm',threshold=0.8)
-
-        self.click_x_y(964,884)#确定出阵
-        time.sleep(5)
-        screenshot= capture_screenshot()
-        matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
-        matched_special, confidence = self.match_scene(screenshot, self.scene_path['ldz_special'], threshold=0.96)
-        while not matched_home and not matched_special:
-            self.click_x_y(1311,426)
-            time.sleep(1)
+            elif matched_home:
+                self.home_to_battle_select()
+                self.clickButton('battlefield_select','lianduizhan_sea','lianduizhan')
+                self.click_x_y(925,709)
+                self.wait_for_scene('battle_set_out')
+                #TODO: update wait for scene to take in an argument to see where I should click and wait.
+                self.clickButton('battle_set_out','march_now','ldz_march_confirm',threshold=0.8)
+                #TODO:could be no pass, update click button to accept cases that have two possible outcome
+                screenshot= capture_screenshot()
+                matched_no_pass, confidence = self.match_scene(screenshot, self.scene_path['ldz_no_pass'], threshold=0.8)
+                if matched_no_pass:
+                    #run out of pass
+                    self.click_x_y(780,658)#补充
+                    time.sleep(2)
+                    self.wait_for_scene('ldz_buy_pass')
+                    self.click_x_y(1255,674)#补充全部
+                    time.sleep(2)
+                    self.click_x_y(968,716)#确定
+                    self.wait_for_scene('battle_set_out')
+                    self.clickButton('battle_set_out','march_now','ldz_march_confirm',threshold=0.8)
+            else:
+                #not starting at expected scene, end task
+                print('Not starting at home or special, end task.')
+                return False
+            self.click_x_y(964,884)#确定出阵
+            time.sleep(5)
             screenshot= capture_screenshot()
             matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
             matched_special, confidence = self.match_scene(screenshot, self.scene_path['ldz_special'], threshold=0.96)
-        if matched_special:
-            self.click_x_y(925,709)
-            self.wait_for_scene('battle_set_out')
-            self.clickButton('battle_set_out','march_now','ldz_march_confirm',threshold=0.8)
-            self.click_x_y(964,884)#确定出阵
-            screenshot= capture_screenshot()
-            matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
-            while not matched_home:
+            while not matched_home and not matched_special:
                 self.click_x_y(1311,426)
                 time.sleep(1)
                 screenshot= capture_screenshot()
                 matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
+                matched_special, confidence = self.match_scene(screenshot, self.scene_path['ldz_special'], threshold=0.96)
+        except Exception as e:
+            logging.error(str(e))
+            print("Error:", e)
+            
+            return False 
 
+        
+        return True
     #try a full cycle
     #1. from home click march button
     #2. from march_page click march image
