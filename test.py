@@ -48,10 +48,11 @@ counter = 0
 # %%
 
 while True:
-    march.march_ldz()
+    success = march.march_ldz()
     counter += 1
     print(f"Run {counter} times.")
-    # march.check_state_reconnect()#TODO: arrangement just for now.
+    if not success:
+        march.check_state_reconnect()#TODO: arrangement just for now.
     # Break the loop if "q" key is pressed
     if keyboard.is_pressed("z"):
         print("Exiting the loop as 'z' was pressed.")

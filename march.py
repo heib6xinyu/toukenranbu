@@ -668,20 +668,28 @@ class March:
                 self.click_x_y(925,709)
                 self.wait_for_scene('battle_set_out')
                 #TODO: update wait for scene to take in an argument to see where I should click and wait.
-                self.clickButton('battle_set_out','march_now','ldz_march_confirm',threshold=0.8)
-                #TODO:could be no pass, update click button to accept cases that have two possible outcome
-                screenshot= capture_screenshot()
-                matched_no_pass, confidence = self.match_scene(screenshot, self.scene_path['ldz_no_pass'], threshold=0.8)
-                if matched_no_pass:
-                    #run out of pass
-                    self.click_x_y(780,658)#补充
-                    time.sleep(2)
-                    self.wait_for_scene('ldz_buy_pass')
-                    self.click_x_y(1255,674)#补充全部
-                    time.sleep(2)
-                    self.click_x_y(968,716)#确定
-                    self.wait_for_scene('battle_set_out')
+                try:
                     self.clickButton('battle_set_out','march_now','ldz_march_confirm',threshold=0.8)
+                    #TODO:could be no pass, update click button to accept cases that have two possible outcome
+                except SceneTimeoutError as e:
+                    logging.error(str(e))
+                    print("Error:", e)
+
+                    screenshot= capture_screenshot()
+                    matched_no_pass, confidence = self.match_scene(screenshot, self.scene_path['ldz_no_pass'], threshold=0.8)
+                    if matched_no_pass:
+                        #run out of pass
+                        self.click_x_y(780,658)#补充
+                        time.sleep(2)
+                        self.wait_for_scene('ldz_buy_pass')
+                        self.click_x_y(1255,674)#补充全部
+                        time.sleep(2)
+                        self.click_x_y(968,716)#确定
+                        self.wait_for_scene('battle_set_out')
+                        self.clickButton('battle_set_out','march_now','ldz_march_confirm',threshold=0.8)
+                    else:
+                        print('Unexpected scene when time out at march confirm. Run failed')
+                        return False
             else:
                 #not starting at expected scene, end task
                 print('Not starting at home or special, end task.')
