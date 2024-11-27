@@ -639,9 +639,13 @@ class March:
 
     
 
-    def march_ldz(self):
+    def march_ldz(self, e_num = 4, s_num = 4):
         """
         This is the march function for 联队战， 默认用1队反复刷
+
+        Params:
+        -e_num : battlefield number, default is 4, the hardest level
+        -s_num : special battlefield number, default is 4, the hardest level
 
         Cycle:
         1. home to battle select
@@ -658,14 +662,33 @@ class March:
             matched_special, confidence = self.match_scene(screenshot, self.scene_path['ldz_special'], threshold=0.6)
             if matched_special:
                 #click 4, set out, won't have the case of no pass
-                self.click_x_y(925,709)
+                match s_num:
+                    case 1:
+                        self.click_x_y(450,490)
+                    case 2:
+                        self.click_x_y(925,490)
+                    case 3:
+                        self.click_x_y(450,709)
+                    case 4:
+                        self.click_x_y(925,709)
+                self.click_x_y(1505,921)
                 self.wait_for_scene('battle_set_out')
                 #TODO: update wait for scene to take in an argument to see where I should click and wait.
                 self.clickButton('battle_set_out','march_now','ldz_march_confirm',threshold=0.8)
             elif matched_home:
                 self.home_to_battle_select()
                 self.clickButton('battlefield_select','lianduizhan_sea','lianduizhan')
-                self.click_x_y(925,709)
+                match e_num:
+                    case 1:
+                        self.click_x_y(450,490)
+                    case 2:
+                        self.click_x_y(925,490)
+                    case 3:
+                        self.click_x_y(450,709)
+                    case 4:
+                        self.click_x_y(925,709)
+                self.click_x_y(1505,921)
+
                 self.wait_for_scene('battle_set_out')
                 #TODO: update wait for scene to take in an argument to see where I should click and wait.
                 try:
