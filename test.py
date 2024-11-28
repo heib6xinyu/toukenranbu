@@ -48,7 +48,7 @@ counter = 0
 # %%
 
 while True:
-    success = march.march_ldz()
+    success = march.march_zk(0,3)
     counter += 1
     print(f"Run {counter} times.")
     if not success:

@@ -180,10 +180,20 @@ class March:
         return False
 
     def go_home(self):
-        clicked = self.clickButton('next_step','return_base','go_home')           
-        #6-2. click yes
-        clicked = self.clickButton('go_home','yes','home')
-        return True
+        screenshot= capture_screenshot()
+        matched, confidence = self.match_scene(screenshot, self.scene_path['battle_set_out'], threshold=0.6)
+        if matched:
+            #at battle set out
+            self.click_x_y(1807,1017)#本丸
+        else:
+            self.click_x_y(1673,633)#返回本丸#633?
+            time.sleep(1)
+            self.click_x_y(794,709)#是
+        at_scene = self.wait_for_scene('home')
+        if at_scene:
+            return True
+        else:
+            return False
     
     def home_to_battle_select(self):
         self.wait_for_scene('home')#TODO figure out at which level should i just throw exception and where to try except
@@ -638,7 +648,109 @@ class March:
             at_scene = self.wait_for_scene('home',0.7)
 
     
+    def march_zk(self, team = 0, level = 4):
+        """
+        This is the march function for 战力扩充计划
 
+        Params:
+        -level : which battlefield, default is 4, the hardest level
+        -team : 0 极太1队,用白山治疗
+                1 极短2队
+        Cycle:
+        1. baishan healing or normal healing
+        2. home to battle select
+        3. from battlefield select, click zhanlikuochong
+        4. from actvity page, match level num to clicking position
+        5. from battle set out click set out now
+        6. continue clicking fight until severe injure warning1 or home 
+        7. if severe injure warning1, go home
+        """
+
+        if team ==0:
+            #极太队，白山治疗
+            try:
+                self.wait_for_scene('home')
+                self.clickButton('home','team_button','team_select')
+                screenshot= capture_screenshot()
+                path = self.status_path['severe_injure']
+                top_left, width, height,num_injure = find_template_in_screenshot(screenshot, path, threshold=0.60)
+                if top_left:
+                    #there is severe injury, heal all of them
+                    for i in range((max(num_injure,6))):
+                        
+                        more_injure = self.healing('taidao',True)
+                        if not more_injure: #should be at home
+                            break
+                        self.clickButton('home','team_button','healing_team')
+
+
+                else:
+                    #no one injured.
+                    #click home
+                    self.click_x_y(1804,1038)
+                    self.wait_for_scene('home')
+                #after healing, most likely will be at home
+                self.clickButton('home','team_button','team_select',threshold=0.5)
+                self.select_predefine_team()
+                #click home
+                self.click_x_y(1804,1038)
+            except Exception  as e:
+                logging.error(str(e))
+                print("Error:", e)
+                print('Baishan Heal task failed.')
+                return False   
+        elif team ==1:
+            #极短队，直接治疗
+            try:
+                repair_success = self.repair("duandao", True, "m")
+            except Exception  as e:
+                logging.error(str(e))
+                print("Error:", e)
+                print('Repair task failed.')
+                return False
+        try:
+            self.home_to_battle_select()
+            self.clickButton('battlefield_select','zhanlikuochong','zlkc')
+            match level:
+                case 1:
+                    self.click_x_y(450,490)
+                case 2:
+                    self.click_x_y(925,490)
+                case 3:
+                    self.click_x_y(450,709)
+                case 4:
+                    self.click_x_y(925,709)
+            
+        
+            self.click_x_y(1418,919)
+            at_scene = self.wait_for_scene('battle_set_out',0.6)
+            self.click_x_y(1418,919)#set out now
+            
+            time.sleep(3)
+            screenshot= capture_screenshot()
+            matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
+            matched_injure, confidence = self.match_scene(screenshot, self.scene_path['severe_injure_warning1'], threshold=0.7)
+            while not matched_home and not matched_injure:
+                self.click_x_y(1106,642)#继续前进
+                time.sleep(1)
+                screenshot= capture_screenshot()
+                matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
+                matched_injure, confidence = self.match_scene(screenshot, self.scene_path['severe_injure_warning1'], threshold=0.7)
+                
+            if matched_injure:
+                self.click_x_y(1185,733)#click no first.
+                time.sleep(1)
+                at_home = self.go_home()
+                if at_home:
+                    return True
+                
+        except Exception as e:
+            logging.error(str(e))
+            print("Error:", e)
+            print('Loop zhanlikuochong task failed.')
+            return False
+    
+    
     def march_ldz(self, e_num = 4, s_num = 4):
         """
         This is the march function for 联队战， 默认用1队反复刷
