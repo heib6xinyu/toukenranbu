@@ -89,10 +89,10 @@ def find_template_in_screenshot(screenshot, template_path,threshold = 0.7):
     # Draw a rectangle around the matched region
     cv2.rectangle(screenshot, top_left, bottom_right, (0, 255, 0), 2)
     
-    # Display the result
-    cv2.imshow("Matched Result", resize_image(screenshot))
-    cv2.waitKey(3000)
-    cv2.destroyAllWindows()    
+    # # Display the result
+    # cv2.imshow("Matched Result", resize_image(screenshot))
+    # cv2.waitKey(3000)
+    # cv2.destroyAllWindows()    
     if max_val >= threshold:
         print(f"Match found with confidence: {max_val},there are {num_regions_above_threshold}")
         return top_left, w, h,num_regions_above_threshold

@@ -73,7 +73,9 @@ class March:
     def swipe_to_left_m(self):
         adb_swipe(1251, 562, 618, 562, 50)
         return True
-
+    def swipe_up_l(self):
+        adb_swipe(945, 832, 945, 290, 50)
+        return True
 
 
         
@@ -311,7 +313,14 @@ class March:
         #assume in battlefield
         screenshot = capture_screenshot()
         matched, confidence = self.match_scene(screenshot, self.scene_path["home"], threshold=0.7)  
-        while not matched:
+        while not matched:     
+            screenshot = capture_screenshot()
+            matched_injure, confidence = self.match_scene(screenshot, self.scene_path["severe_injure_warning1"], threshold=0.7)  
+            if matched_injure:
+                self.click_x_y(788,710)
+                time.sleep(1)
+                self.click_x_y(788,710)
+                time.sleep(1)
             time.sleep(self.speed)
             self.click_x_y(1199,728)#continue marching
             screenshot = capture_screenshot()
@@ -345,8 +354,25 @@ class March:
             #TODO: when the selected target has very few number, the char_select may not be able to recognize it.
             confirm_num = self.search_char(self.touken_path['baishanjiguang'])
             self.clickButton('char_select','confirm','healing_team',confirm_num)
+        
+        # #give him treat to boost mood.
+        # self.clickButton('char_select','tool','tool_page')
+        # self.swipe_up_l()
+        # self.swipe_up_l()
+        # self.swipe_up_l()#just to make sure it is all the way at the bottom
+        # self.click_x_y(1379,589)#TODO： hard code 一口团子，implement tool selection 
+        # self.click_x_y(1503,227)#give it to baishan
+        
+        # self.click_x_y(266,1035)#使用
+        time.sleep(1)
+        screenshot = capture_screenshot()
+        matched, _ = self.match_scene(screenshot, self.scene_path['no_treat_need'])
+        if matched:
+            self.click_x_y(972,706)#确定
+            time.sleep(1)
+            self.click_x_y(338,143)#返回
+            time.sleep(1)
         self.clickButton('healing_team','add_char','char_select', 1)
-
         self.filter_touken(touken_type,touken_ji)#pass touken's target
         
         confirm_num = self.search_injured_char(0.6)
@@ -592,7 +618,7 @@ class March:
 
         So far it's go home and restart.
         """
-        click_home_botton = ["underground_march_confirm","add_teammate","battle_set_out","battlefield_select","char_select","healing_team","march_page","no_repair_need","repair","repair_select","team_select", "underground_scene","underground_select",'ldz_special','lianduizhan','ldz_buy_pass','ldz_no_pass','ldz_march_confirm']
+        click_home_botton = ["underground_march_confirm","add_teammate","battle_set_out","battlefield_select","char_select","healing_team","march_page","no_repair_need","repair","repair_select","team_select", "underground_scene","underground_select",'ldz_special','lianduizhan','ldz_buy_pass','ldz_no_pass','ldz_march_confirm','zlkc']
         screenshot= capture_screenshot()
         scene_now, confidence = find_best_match_in_scene(screenshot, self.scene_path, threshold=0.6)
         if scene_now == 'next_step': #TODO, implement a way to reconnect to the current task...
@@ -634,6 +660,16 @@ class March:
                 time.sleep(4) #wait for animation 
             print('Speeded up all repair.')
             return True
+        elif scene_now == 'filter_all':
+            self.click_x_y(1633,116)#点叉
+            self.click_x_y(1818,1029)#本丸
+            
+            print(f"From {scene_now}, Reconnected.")
+        elif scene_now == 'no_treat_need':
+            self.click_x_y(972,706)#确定
+            self.click_x_y(338,143)#返回
+            print(f"From {scene_now}, Reconnected.")
+
         elif scene_now == 'need_equipt':
             self.click_x_y(761,706)#整备刀装
             self.equipt()
@@ -743,7 +779,7 @@ class March:
                 at_home = self.go_home()
                 if at_home:
                     return True
-                
+            return True    
         except Exception as e:
             logging.error(str(e))
             print("Error:", e)

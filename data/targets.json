@@ -208,6 +208,18 @@
     },
     {
         "tar_type": "button",
+        "tar_name": "tool",
+        "scenes":
+            {
+                "char_select": {
+                    "coordinates": [[225, 1006]],
+                    "w": 181,
+                    "h": 55
+                }
+            }
+    },
+    {
+        "tar_type": "button",
         "tar_name": "repair_button",
         "scenes":
             {
