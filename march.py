@@ -124,7 +124,7 @@ class March:
         print(f"No match for {scene_template}, confidence {max_val}.")
         return False, None
 
-    def wait_for_scene(self, scene, threshold = 0.8):
+    def wait_for_scene(self, scene, threshold = 0.7):
         '''
         Helper function, wait to see if the screen is scene, return boolean
         
@@ -262,7 +262,7 @@ class March:
                 return None    
 
 
-    def filter_touken(self, touken_type, ji):
+    def filter_touken(self, touken_type, ji = True):
         """
         Helper function to filter for desire touken's type
         
@@ -304,12 +304,16 @@ class March:
         self.clickButton('march_page','march_image','battlefield_select')
         self.click1()
         self.wait_for_scene('battle_set_out')
-        self.clickButton('battle_set_out','march_now','severe_injure_warning1')
-        #so far hard code the confirm set out because scene matching is time consuming
-        self.click_x_y(792,710)
-        time.sleep(self.speed)
-        self.click_x_y(792,710)
-        self.wait_for_scene("1-1")
+        try:
+            self.clickButton('battle_set_out','march_now','severe_injure_warning1')
+            #so far hard code the confirm set out because scene matching is time consuming
+            #it is possible that the touken picked out is not severe injure, in that case just run 1-1 anyways
+            self.click_x_y(792,710)
+            time.sleep(self.speed)
+            self.click_x_y(792,710)
+            self.wait_for_scene("1-1")
+        except SceneTimeoutError as e:
+            print('touken not injured. run normal 1-1')
         #assume in battlefield
         screenshot = capture_screenshot()
         matched, confidence = self.match_scene(screenshot, self.scene_path["home"], threshold=0.7)  
@@ -342,7 +346,7 @@ class March:
         self.state = f'healing {touken_type}, {touken_ji}'
         
         self.clickButton('team_select','ungroup','confirm_ungroup')
-        self.clickButton('confirm_ungroup','yes','team_select',threshold=0.6)
+        self.clickButton('confirm_ungroup','yes','team_select',threshold=0.61)
             
         screenshot = capture_screenshot()
         found,_ = check_area(screenshot,self.button_targets['baishan'], 'healing_team', threshold=0.5)
@@ -364,14 +368,14 @@ class March:
         # self.click_x_y(1503,227)#give it to baishan
         
         # self.click_x_y(266,1035)#使用
-        time.sleep(1)
-        screenshot = capture_screenshot()
-        matched, _ = self.match_scene(screenshot, self.scene_path['no_treat_need'])
-        if matched:
-            self.click_x_y(972,706)#确定
-            time.sleep(1)
-            self.click_x_y(338,143)#返回
-            time.sleep(1)
+        # time.sleep(1)
+        # screenshot = capture_screenshot()
+        # matched, _ = self.match_scene(screenshot, self.scene_path['no_treat_need'])
+        # if matched:
+        #     self.click_x_y(972,706)#确定
+        #     time.sleep(1)
+        #     self.click_x_y(338,143)#返回
+        #     time.sleep(1)
         self.clickButton('healing_team','add_char','char_select', 1)
         self.filter_touken(touken_type,touken_ji)#pass touken's target
         
@@ -681,8 +685,11 @@ class March:
             self.wait_for_scene('home')
             print('Severe injure warning from battle set out, reconnect.')
         else:
-            at_scene = self.wait_for_scene('home',0.7)
-
+            try:
+                at_scene = self.wait_for_scene('home',0.7)
+            except Exception as e:
+                print('Cannot locate, try again.')
+                return False
     
     def march_zk(self, team = 0, level = 4):
         """
@@ -708,17 +715,19 @@ class March:
                 self.wait_for_scene('home')
                 self.clickButton('home','team_button','team_select')
                 screenshot= capture_screenshot()
-                path = self.status_path['severe_injure']
-                top_left, width, height,num_injure = find_template_in_screenshot(screenshot, path, threshold=0.60)
-                if top_left:
+                #path = self.status_path['severe_injure']
+                has_injury, loc_num = check_area(screenshot,self.button_targets['severe_injure'], 'team_select',0,0.6)
+
+                if has_injury:
+                    counter = 0
                     #there is severe injury, heal all of them
-                    for i in range((max(num_injure,6))):
+                    while has_injury and counter < 6 :#can't have more than 6 injury
                         
-                        more_injure = self.healing('taidao',True)
-                        if not more_injure: #should be at home
+                        success = self.healing('taidao',True)
+                        if not success: #should be at home, return false when didn't find injury touken
                             break
                         self.clickButton('home','team_button','healing_team')
-
+                        counter+=1
 
                 else:
                     #no one injured.
@@ -747,6 +756,7 @@ class March:
         try:
             self.home_to_battle_select()
             self.clickButton('battlefield_select','zhanlikuochong','zlkc')
+            time.sleep(2)
             match level:
                 case 1:
                     self.click_x_y(450,490)
@@ -757,7 +767,8 @@ class March:
                 case 4:
                     self.click_x_y(925,709)
             
-        
+            
+            time.sleep(2)
             self.click_x_y(1418,919)
             at_scene = self.wait_for_scene('battle_set_out',0.6)
             self.click_x_y(1418,919)#set out now

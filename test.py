@@ -48,19 +48,26 @@ counter = 0
 # %%
 
 while True:
-    success = march.march_zk(0,3)
-    counter += 1
-    print(f"Run {counter} times.")
+    success = march.march_ldz()
+    
+    print(f"Run successfully {counter} times.")
     if not success:
         march.check_state_reconnect()#TODO: arrangement just for now.
+    else:
+        counter += 1
     # Break the loop if "q" key is pressed
-    if keyboard.is_pressed("z"):
-        print("Exiting the loop as 'z' was pressed.")
+    if counter>999:
+        print("Exiting")
         break
 # %%
 counter
 # %%
 _, coord = crop_from_screenshot()
+# %%
+screenshot= capture_screenshot()
+#path = self.status_path['severe_injure']
+has_injury, loc_num = check_area(screenshot,march.button_targets['severe_injure'], 'team_select',0,0.6)
+print(loc_num)
 # %%
 screenshot= capture_screenshot()
 
@@ -70,9 +77,6 @@ march.select_predefine_team(1)
 # %%
 confirm_num = march.search_injured_char(0.5)
 # %%
-screenshot_image = capture_screenshot()
-# Display the screenshot (optional)
-found, num = check_area(screenshot_image, button_targets['severe_injure'],'team_select', threshold=0.6)
 
 # %%
 march.healing('taidao',True)
@@ -93,6 +97,26 @@ img = Image.open(status_path)
 text = pytesseract.image_to_string(img, lang='chi_sim')
 print(text)
 # %%
+# %%
+import itertools
 
+#batch_sizes = [32, 64, 128]
+alphas = [0.9, 0.7, 0.5]
+gammas = [0.99, 0.95,  0.90]
+#epsilon_decay_rates = [0.001, 0.05, 0.01]
+learning_rates = [1e-4, 5e-4, 1e-3, 5e-3]
+kl_first = [0.1, 0.3, 0.5]
+kl_second = [0.5, 0.3, 0.1]
+#hidden_dims = [32, 64]
+#target_update_frequencies = [700, 1000, 1500]
+target_update_frequencies = [0.005, 0.05, 0.5]#tau value
+# Generate all possible combinations of parameters
+param_grid = list(itertools.product(
+    #batch_sizes,
+      target_update_frequencies, alphas, gammas, #epsilon_decay_rates, 
+    learning_rates, kl_first, kl_second
+))
+# %%
+param_grid[120]
 # %%
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
