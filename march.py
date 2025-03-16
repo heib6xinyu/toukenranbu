@@ -797,7 +797,53 @@ class March:
             print('Loop zhanlikuochong task failed.')
             return False
     
-    
+    def march_yhdh(self):
+        """
+        This is the march function for 夜花夺还作战,默认用1队反复刷
+
+        Cycle:
+        1. home to battle select
+        2. if this is the single activity, just click the activity square
+        3. from activity page, click select team
+        4. from battle set out click set out now 
+        5. continue clicking fight until home 
+
+        """
+        try:
+            screenshot= capture_screenshot()
+            matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
+            if matched_home:
+                self.home_to_battle_select()
+                self.clickButton('battlefield_select','yehuaduohuan','yhdh')
+
+                self.click_x_y(1505,921)
+
+                self.wait_for_scene('battle_set_out')
+                #TODO: update wait for scene to take in an argument to see where I should click and wait.
+                self.clickButton('battle_set_out','march_now','yhdh_confirm',threshold=0.8)
+                
+            else:
+                #not starting at expected scene, end task
+                print('Not starting at home, end task.')
+                return False
+            self.click_x_y(771,787)#确定出阵
+            time.sleep(5)
+            screenshot= capture_screenshot()
+            matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
+            while not matched_home:
+                self.click_x_y(1196,718)
+                time.sleep(1)
+                screenshot= capture_screenshot()
+                matched_home, confidence = self.match_scene(screenshot, self.scene_path['home'], threshold=0.6)
+        except Exception as e:
+            logging.error(str(e))
+            print("Error:", e)
+            
+            return False 
+
+        
+        return True
+
     def march_ldz(self, e_num = 4, s_num = 4):
         """
         This is the march function for 联队战， 默认用1队反复刷

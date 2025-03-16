@@ -88,6 +88,18 @@
     },
     {
         "tar_type": "button",
+        "tar_name": "yehuaduohuan",
+        "scenes":
+            {
+                "battlefield_select": {
+                    "coordinates": [[735, 295]],
+                    "w": 476,
+                    "h": 123
+                }
+            }
+    },
+    {
+        "tar_type": "button",
         "tar_name": "yes",
         "scenes":
             {

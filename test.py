@@ -48,13 +48,13 @@ counter = 0
 # %%
 
 while True:
-    success = march.march_ldz()
+    success = march.march_yhdh()
     
     print(f"Run successfully {counter} times.")
     if not success:
         march.check_state_reconnect()#TODO: arrangement just for now.
     else:
-        counter += 1
+        counter +=3
     # Break the loop if "q" key is pressed
     if counter>999:
         print("Exiting")
